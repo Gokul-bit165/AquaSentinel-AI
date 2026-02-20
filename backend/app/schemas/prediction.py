@@ -1,7 +1,8 @@
 """
 Pydantic schemas for request/response validation.
+Updated to Pydantic v2 standards.
 """
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
@@ -16,7 +17,7 @@ class PredictionInput(BaseModel):
     cases_count: int = Field(..., ge=0, description="Reported disease cases")
     location: Optional[str] = Field(default="Unknown", description="Location name")
 
-    class Config:
+    model_config = ConfigDict(
         json_schema_extra = {
             "example": {
                 "rainfall": 250.0,
@@ -26,6 +27,7 @@ class PredictionInput(BaseModel):
                 "location": "Zone A"
             }
         }
+    )
 
 
 class PredictionOutput(BaseModel):
@@ -43,8 +45,7 @@ class PredictionOutput(BaseModel):
     location: Optional[str]
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Alert Schemas ---
@@ -58,8 +59,7 @@ class AlertOutput(BaseModel):
     is_resolved: bool
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Batch Prediction Schemas ---
@@ -71,7 +71,7 @@ class BatchPredictionInput(BaseModel):
         description="List of prediction inputs (max 50)"
     )
 
-    class Config:
+    model_config = ConfigDict(
         json_schema_extra = {
             "example": {
                 "predictions": [
@@ -82,6 +82,7 @@ class BatchPredictionInput(BaseModel):
                 ]
             }
         }
+    )
 
 
 class BatchPredictionOutput(BaseModel):
@@ -102,7 +103,7 @@ class StatsOutput(BaseModel):
     active_alerts: int
     resolved_alerts: int
     risk_distribution: Dict[str, int]
-    trend_distribution: Dict[str, int]      # {"RISING": 2, "STABLE": 10, "FALLING": 1}
+    trend_distribution: Dict[str, int]
     avg_confidence: Optional[float]
     recent_locations: List[str]
     predictions_today: int

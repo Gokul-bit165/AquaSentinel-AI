@@ -1,10 +1,11 @@
-@import "tailwindcss";
-
 /* ===== Google Font ===== */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 /* ===== Leaflet CSS ===== */
 @import "leaflet/dist/leaflet.css";
+
+/* ===== Tailwind CSS (V4) ===== */
+@import "tailwindcss";
 
 /* ===== Custom Design System ===== */
 :root {
@@ -44,8 +45,14 @@ body {
 }
 
 /* ===== Scrollbar ===== */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--bg-secondary); }
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
 ::-webkit-scrollbar-thumb {
   background: var(--accent-cyan);
   border-radius: 3px;
@@ -59,6 +66,7 @@ body {
   backdrop-filter: blur(12px);
   transition: all 0.3s ease;
 }
+
 .glass-card:hover {
   border-color: rgba(6, 182, 212, 0.3);
   box-shadow: var(--glow-cyan);
@@ -66,9 +74,17 @@ body {
 
 /* ===== Pulse Animation ===== */
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 8px rgba(6, 182, 212, 0.4); }
-  50% { box-shadow: 0 0 20px rgba(6, 182, 212, 0.8); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(6, 182, 212, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.8);
+  }
 }
+
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
 }
@@ -78,6 +94,7 @@ body {
   background: var(--bg-secondary) !important;
   border-radius: 12px;
 }
+
 .leaflet-tile-pane {
   filter: brightness(0.7) contrast(1.1) saturate(0.8);
 }

@@ -6,10 +6,10 @@ Applies the same feature engineering used during training.
 import os
 import numpy as np
 import joblib
+from app.core.config import settings
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(SCRIPT_DIR, "model.pkl")
-ENCODER_PATH = os.path.join(SCRIPT_DIR, "label_encoder.pkl")
+MODEL_PATH = settings.abs_model_path
+ENCODER_PATH = settings.abs_encoder_path
 
 # Lazy-loaded singletons
 _model = None
