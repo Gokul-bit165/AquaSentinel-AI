@@ -34,4 +34,8 @@ export const getStats = () => api.get('/stats');
 /** Fetch ML model metrics. */
 export const getModelMetrics = () => api.get('/model/metrics');
 
+// Agentic AI & Simulation (Ollama + SHAP)
+export const getAgentAnalysis = (data) => api.post('/api/v1/agent/analyze', data);
+export const runSimulation = (baseline, updates) => api.post('/api/v1/agent/simulate', { baseline, updates });
+
 export default api;

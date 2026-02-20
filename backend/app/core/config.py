@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     ENCODER_PATH: str = "app/ml/label_encoder.pkl"
     METRICS_PATH: str = "app/ml/metrics.json"
 
+    # Ollama Settings
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    LLM_MODEL: str = "llama3:latest"
+
     @property
     def abs_model_path(self) -> str:
         return os.path.join(self.BASE_DIR, self.MODEL_PATH)
