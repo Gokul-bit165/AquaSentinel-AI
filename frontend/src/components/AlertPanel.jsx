@@ -1,88 +1,88 @@
-/**
- * AlertPanel — Scrollable list of active alerts with severity badges.
- * Displays auto-generated alerts from high-risk predictions.
- */
+import { AlertCircle, ShieldAlert, Info, CheckCircle2, ChevronRight } from 'lucide-react';
 
 const severityConfig = {
     HIGH: {
-        bg: 'bg-red-500/10',
-        border: 'border-red-500/30',
-        badge: 'bg-red-500/20 text-red-400',
-        dot: 'bg-red-500',
-        icon: '🚨',
+        bg: 'bg-red-50',
+        border: 'border-red-100',
+        text: 'text-red-700',
+        badge: 'bg-red-100 text-red-600',
+        icon: ShieldAlert,
     },
     MEDIUM: {
-        bg: 'bg-amber-500/10',
-        border: 'border-amber-500/30',
-        badge: 'bg-amber-500/20 text-amber-400',
-        dot: 'bg-amber-500',
-        icon: '⚠️',
+        bg: 'bg-amber-50',
+        border: 'border-amber-100',
+        text: 'text-amber-700',
+        badge: 'bg-amber-100 text-amber-600',
+        icon: AlertCircle,
     },
     LOW: {
-        bg: 'bg-green-500/10',
-        border: 'border-green-500/30',
-        badge: 'bg-green-500/20 text-green-400',
-        dot: 'bg-green-500',
-        icon: '✅',
+        bg: 'bg-blue-50',
+        border: 'border-blue-100',
+        text: 'text-blue-700',
+        badge: 'bg-blue-100 text-blue-600',
+        icon: Info,
     },
 };
 
 export default function AlertPanel({ alerts = [] }) {
-    if (alerts.length === 0) {
-        return (
-            <div className="glass-card p-6">
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                    <span className="text-xl">🔔</span> Alert Center
-                </h3>
-                <div className="flex flex-col items-center justify-center py-10 text-slate-500">
-                    <span className="text-4xl mb-3">✅</span>
-                    <p className="text-sm">No active alerts</p>
-                    <p className="text-xs text-slate-600 mt-1">All systems operational</p>
-                </div>
-            </div>
-        );
-    }
-
     return (
-        <div className="glass-card p-6">
-            <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <span className="text-xl">🔔</span> Alert Center
-                </h3>
-                <span className="text-xs font-medium px-2 py-1 rounded-full bg-red-500/20 text-red-400 animate-pulse">
+        <div className="glass-card flex flex-col h-full overflow-hidden">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <div className="flex items-center gap-2 text-[11px] font-bold text-[var(--text-primary)] uppercase tracking-widest font-outfit">
+                    <ShieldAlert size={16} className="text-red-500" />
+                    System Alerts
+                </div>
+                <span className="text-[10px] font-bold bg-white px-2 py-0.5 rounded-full border border-slate-200 text-slate-400">
                     {alerts.length} Active
                 </span>
             </div>
 
-            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
-                {alerts.map((alert) => {
-                    const config = severityConfig[alert.severity] || severityConfig.HIGH;
-                    return (
-                        <div
-                            key={alert.id}
-                            className={`p-4 rounded-xl border ${config.bg} ${config.border} 
-                         transition-all duration-300 hover:scale-[1.01]`}
-                        >
-                            <div className="flex items-start gap-3">
-                                <span className="text-lg mt-0.5">{config.icon}</span>
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${config.badge}`}>
-                                            {alert.severity}
-                                        </span>
-                                        <span className="text-xs text-slate-500">
-                                            {new Date(alert.created_at).toLocaleString()}
-                                        </span>
-                                    </div>
-                                    <p className="text-sm text-slate-300 leading-relaxed">
-                                        {alert.message}
-                                    </p>
-                                </div>
-                                <div className={`w-2 h-2 rounded-full ${config.dot} animate-pulse mt-2`} />
-                            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-none">
+                {alerts.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-3">
+                        <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center text-green-500">
+                            <CheckCircle2 size={24} />
                         </div>
-                    );
-                })}
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">System Optimal</p>
+                        <p className="text-[11px] text-slate-400">No active threats or anomalies detected in the current cycle.</p>
+                    </div>
+                ) : (
+                    alerts.map((alert, i) => (
+                        <AlertItem key={i} alert={alert} />
+                    ))
+                )}
+            </div>
+
+            <button className="p-4 border-t border-slate-100 text-[10px] font-bold text-[var(--text-secondary)] hover:text-blue-600 uppercase tracking-widest transition-colors flex items-center justify-center gap-2 group">
+                View Full Alert Log
+                <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+            </button>
+        </div>
+    );
+}
+
+function AlertItem({ alert }) {
+    const config = severityConfig[alert.severity] || severityConfig.LOW;
+    const Icon = config.icon;
+
+    return (
+        <div className={`p-4 rounded-xl border ${config.border} ${config.bg} group cursor-pointer transition-all hover:translate-y-1`}>
+            <div className="flex justify-between items-start mb-2">
+                <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest ${config.badge}`}>
+                    {alert.severity} Risk
+                </span>
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                    {alert.timestamp || 'Just now'}
+                </span>
+            </div>
+            <div className="flex gap-3">
+                <div className={`mt-1 ${config.text}`}>
+                    <Icon size={16} />
+                </div>
+                <div>
+                    <h5 className={`font-bold text-sm leading-tight mb-1 ${config.text}`}>{alert.message}</h5>
+                    <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">{alert.location || 'Coimbatore Region'}</p>
+                </div>
             </div>
         </div>
     );

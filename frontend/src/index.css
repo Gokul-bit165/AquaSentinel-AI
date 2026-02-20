@@ -1,28 +1,35 @@
 @import "tailwindcss";
-
-/* ===== Google Font ===== */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
-/* ===== Leaflet CSS ===== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap');
 @import "leaflet/dist/leaflet.css";
 
-/* ===== Custom Design System ===== */
+/* ===== Clinical Light Design System ===== */
 :root {
-  --bg-primary: #0a0f1e;
-  --bg-secondary: #111827;
-  --bg-card: #1a2332;
-  --bg-card-hover: #1f2b3d;
-  --accent-cyan: #06b6d4;
-  --accent-teal: #14b8a6;
-  --accent-blue: #3b82f6;
-  --accent-purple: #8b5cf6;
-  --risk-high: #ef4444;
-  --risk-medium: #f59e0b;
-  --risk-low: #22c55e;
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --border-subtle: rgba(148, 163, 184, 0.12);
-  --glow-cyan: 0 0 20px rgba(6, 182, 212, 0.3);
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F8FAFC;
+  --bg-tertiary: #F1F5F9;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #F8FAFC;
+
+  --accent-primary: #2563EB;
+  /* Professional Blue */
+  --accent-secondary: #0D9488;
+  /* Professional Teal */
+  --accent-cyan: #0891B2;
+
+  --risk-high: #DC2626;
+  --risk-medium: #D97706;
+  --risk-low: #16A34A;
+
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-tertiary: #94A3B8;
+
+  --border-subtle: #E2E8F0;
+  --border-focus: #3B82F6;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 * {
@@ -32,8 +39,8 @@
 }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background: var(--bg-primary);
+  font-family: 'Inter', 'Outfit', system-ui, -apple-system, sans-serif;
+  background: var(--bg-secondary);
   color: var(--text-primary);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -44,40 +51,68 @@ body {
 }
 
 /* ===== Scrollbar ===== */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--bg-secondary); }
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+}
+
 ::-webkit-scrollbar-thumb {
-  background: var(--accent-cyan);
+  background: var(--accent-primary);
   border-radius: 3px;
 }
 
-/* ===== Glass Card ===== */
+/* ===== Professional Glass Card (White) ===== */
 .glass-card {
-  background: linear-gradient(135deg, rgba(26, 35, 50, 0.9), rgba(17, 24, 39, 0.95));
+  background: rgba(255, 255, 255, 0.8);
   border: 1px solid var(--border-subtle);
-  border-radius: 16px;
-  backdrop-filter: blur(12px);
-  transition: all 0.3s ease;
-}
-.glass-card:hover {
-  border-color: rgba(6, 182, 212, 0.3);
-  box-shadow: var(--glow-cyan);
-}
-
-/* ===== Pulse Animation ===== */
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 8px rgba(6, 182, 212, 0.4); }
-  50% { box-shadow: 0 0 20px rgba(6, 182, 212, 0.8); }
-}
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-/* ===== Leaflet Overrides ===== */
-.leaflet-container {
-  background: var(--bg-secondary) !important;
   border-radius: 12px;
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.leaflet-tile-pane {
-  filter: brightness(0.7) contrast(1.1) saturate(0.8);
+
+.glass-card:hover {
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+/* ===== Animations ===== */
+@keyframes pulse-status {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.5;
+    transform: scale(1.1);
+  }
+}
+
+.animate-status {
+  animation: pulse-status 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ===== Leaflet Overrides (Light Mode) ===== */
+.leaflet-container {
+  background: var(--bg-tertiary) !important;
+  border-radius: 12px;
+  font-family: inherit;
+}
+
+.leaflet-popup-content-wrapper {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+}
+
+.leaflet-popup-tip {
+  background: var(--bg-card);
 }
