@@ -22,4 +22,8 @@ export const getPredictions = () => api.get('/predictions');
 /** Fetch all active alerts. */
 export const getAlerts = () => api.get('/alerts');
 
+// Agentic AI & Simulation (Ollama + SHAP)
+export const getAgentAnalysis = (data) => api.post('/api/v1/agent/analyze', data);
+export const runSimulation = (baseline, updates) => api.post('/api/v1/agent/simulate', { baseline, updates });
+
 export default api;
