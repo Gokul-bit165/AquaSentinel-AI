@@ -18,6 +18,8 @@ class Prediction(Base):
     contamination = Column(Float, nullable=False)
     cases_count = Column(Integer, nullable=False)
     risk_level = Column(String, nullable=False)           # low / medium / high
+    severity = Column(String, nullable=True)              # CRITICAL / HIGH / WARNING / INFO
+    trend = Column(String, nullable=True)                 # RISING / STABLE / FALLING
     confidence = Column(Float, nullable=True)
     recommendation = Column(String, nullable=True)
     location = Column(String, nullable=True, default="Unknown")

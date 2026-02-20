@@ -1,6 +1,7 @@
 """
 ML model predictor for AquaSentinel AI.
 Loads the trained model at import time and exposes prediction functions.
+Applies the same feature engineering used during training.
 """
 import os
 import numpy as np
@@ -10,7 +11,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(SCRIPT_DIR, "model.pkl")
 ENCODER_PATH = os.path.join(SCRIPT_DIR, "label_encoder.pkl")
 
-# Load model and encoder at module level (singleton pattern)
+# Lazy-loaded singletons
 _model = None
 _encoder = None
 
@@ -28,17 +29,41 @@ def _load_model():
         _encoder = joblib.load(ENCODER_PATH)
 
 
+def _engineer_features(rainfall: float, ph_level: float,
+                       contamination: float, cases_count: int) -> np.ndarray:
+    """
+    Apply the same feature engineering as training.
+    Must match FEATURE_COLS order in train_model.py:
+    [rainfall, ph_level, contamination, cases_count,
+     ph_deviation, rain_contam_interaction, cases_per_contam, severity_score]
+    """
+    ph_deviation = abs(ph_level - 7.0)
+    rain_contam_interaction = rainfall * contamination
+    cases_per_contam = cases_count / (contamination + 0.01)
+    severity_score = (
+        rainfall / 400 * 0.25 +
+        ph_deviation / 3.0 * 0.25 +
+        contamination * 0.25 +
+        cases_count / 120 * 0.25
+    )
+
+    return np.array([[
+        rainfall, ph_level, contamination, cases_count,
+        ph_deviation, rain_contam_interaction, cases_per_contam, severity_score,
+    ]])
+
+
 def predict(rainfall: float, ph_level: float,
             contamination: float, cases_count: int) -> dict:
     """
-    Predict waterborne disease risk level.
+    Predict waterborne disease risk level with engineered features.
 
     Returns:
         dict with 'risk_level' (str) and 'confidence' (float)
     """
     _load_model()
 
-    features = np.array([[rainfall, ph_level, contamination, cases_count]])
+    features = _engineer_features(rainfall, ph_level, contamination, cases_count)
     prediction = _model.predict(features)[0]
     probabilities = _model.predict_proba(features)[0]
 
