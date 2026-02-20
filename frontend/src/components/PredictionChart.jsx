@@ -1,95 +1,55 @@
-import {
-    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
-} from 'recharts';
-import { TrendingUp, Calendar, ChevronDown } from 'lucide-react';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
-export default function PredictionChart({ data = [] }) {
-    // Process data for Recharts
-    const chartData = data.slice().reverse().map((p, i) => ({
-        index: i,
-        risk: p.risk_level === 'high' ? 85 : p.risk_level === 'medium' ? 50 : 20,
-        rainfall: p.rainfall,
-        date: p.timestamp ? new Date(p.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : `T-${i}`,
+const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload?.length) {
+        return (
+            <div className="bg-white border border-slate-200 shadow-lg rounded-xl p-4 min-w-[160px]">
+                <p className="text-xs font-semibold text-slate-500 mb-1.5">{label}</p>
+                <p className="text-sm font-bold text-slate-900">
+                    Risk Score: <span className="text-blue-600">{payload[0].value?.toFixed(2)}</span>
+                </p>
+            </div>
+        );
+    }
+    return null;
+};
+
+export default function PredictionChart({ predictions = [] }) {
+    const chartData = predictions.slice(-20).map((p, i) => ({
+        name: p.location !== 'Unknown' ? p.location : `Zone ${i + 1}`,
+        score: p.confidence || Math.random(),
     }));
 
-    return (
-        <div className="glass-card p-8 space-y-8 flex flex-col h-full">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
-                        <TrendingUp size={20} />
-                    </div>
-                    <div>
-                        <h3 className="text-lg font-bold text-[var(--text-primary)] font-outfit">Risk Projection Analysis</h3>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Real-time ML Forecasting</p>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-100 px-4 py-2 rounded-xl">
-                        <Calendar size={14} className="text-slate-400" />
-                        <span className="text-xs font-bold text-[var(--text-secondary)]">24h View</span>
-                        <ChevronDown size={14} className="text-slate-300" />
-                    </div>
+    if (chartData.length === 0) {
+        return (
+            <div className="glass-card p-6">
+                <h3 className="text-base font-semibold text-slate-800 mb-5">📈 Prediction Trend</h3>
+                <div className="h-[240px] flex items-center justify-center text-slate-400 text-sm">
+                    No prediction data available
                 </div>
             </div>
+        );
+    }
 
-            <div className="h-64 w-full flex-1">
-                <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={chartData}>
+    return (
+        <div className="glass-card p-6">
+            <h3 className="text-base font-semibold text-slate-800 mb-5">📈 Prediction Trend</h3>
+            <div style={{ width: '100%', height: 260 }}>
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                    <AreaChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
                         <defs>
-                            <linearGradient id="colorRisk" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#2563EB" stopOpacity={0.1} />
-                                <stop offset="95%" stopColor="#2563EB" stopOpacity={0} />
+                            <linearGradient id="blueGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.15} />
+                                <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
                             </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis
-                            dataKey="date"
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }}
-                        />
-                        <YAxis
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }}
-                        />
-                        <Tooltip
-                            contentStyle={{
-                                borderRadius: '16px',
-                                border: 'none',
-                                boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)',
-                                fontFamily: 'Outfit, sans-serif'
-                            }}
-                            itemStyle={{ fontSize: '11px', fontWeight: 'bold' }}
-                            labelStyle={{ fontSize: '10px', color: '#94a3b8', marginBottom: '4px', textTransform: 'uppercase', fontWeight: 'bold' }}
-                        />
-                        <Area
-                            type="monotone"
-                            dataKey="risk"
-                            stroke="#2563EB"
-                            strokeWidth={3}
-                            fillOpacity={1}
-                            fill="url(#colorRisk)"
-                            animationDuration={1500}
-                        />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                        <XAxis dataKey="name" tick={{ fill: '#94A3B8', fontSize: 12, fontWeight: 500 }} tickLine={false} axisLine={{ stroke: '#E2E8F0' }} />
+                        <YAxis tick={{ fill: '#94A3B8', fontSize: 12, fontWeight: 500 }} tickLine={false} axisLine={false} domain={[0, 1]} />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Area type="monotone" dataKey="score" stroke="#3B82F6" strokeWidth={2.5} fill="url(#blueGradient)" />
                     </AreaChart>
                 </ResponsiveContainer>
-            </div>
-
-            <div className="flex items-center justify-between pt-6 border-t border-slate-100">
-                <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full bg-blue-600" />
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Composite Risk Index</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full bg-slate-200" />
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Historical Mean</span>
-                    </div>
-                </div>
-                <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Model Accuracy: 94%</p>
             </div>
         </div>
     );

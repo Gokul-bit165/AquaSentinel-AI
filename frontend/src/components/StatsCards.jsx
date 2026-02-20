@@ -1,63 +1,68 @@
-import { useEffect, useState, useRef } from 'react';
-import { Activity, ShieldAlert, Zap, Target } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Activity, ShieldAlert, Zap, Target, TrendingUp, TrendingDown } from 'lucide-react';
 
-// Animated counter hook
 function useAnimatedCount(target, duration = 1200) {
     const [count, setCount] = useState(0);
-    const ref = useRef(null);
+    const targetValue = Number(target) || 0;
+
     useEffect(() => {
-        const step = (ts) => {
-            if (!ref.current) ref.current = ts;
-            const progress = Math.min((ts - ref.current) / duration, 1);
-            setCount(Math.floor(progress * target));
-            if (progress < 1) requestAnimationFrame(step);
+        let startTime = null;
+        let animationFrame = null;
+        const animate = (timestamp) => {
+            if (!startTime) startTime = timestamp;
+            const progress = Math.min((timestamp - startTime) / duration, 1);
+            const easeProgress = 1 - Math.pow(1 - progress, 4);
+            setCount(Math.floor(easeProgress * targetValue));
+            if (progress < 1) animationFrame = requestAnimationFrame(animate);
         };
-        requestAnimationFrame(step);
-    }, [target, duration]);
+        animationFrame = requestAnimationFrame(animate);
+        return () => cancelAnimationFrame(animationFrame);
+    }, [targetValue, duration]);
+
     return count;
 }
 
 export default function StatsCards({ stats }) {
-    if (!stats) return null;
+    const data = stats || { total: 0, highRisk: 0, activeAlerts: 0, avgConfidence: 0 };
 
     const cards = [
         {
             label: 'Total Predictions',
-            value: stats.total,
+            value: data.total,
             icon: Activity,
-            color: 'text-blue-600',
-            bg: 'bg-blue-50',
-            border: 'border-l-blue-500'
+            accent: 'bg-blue-50 text-blue-600 border-blue-100',
+            trend: '+12.5%',
+            up: true,
         },
         {
             label: 'High-Risk Alerts',
-            value: stats.highRisk,
+            value: data.highRisk,
             icon: ShieldAlert,
-            color: 'text-red-600',
-            bg: 'bg-red-50',
-            border: 'border-l-red-500'
+            accent: 'bg-red-50 text-red-600 border-red-100',
+            trend: 'Critical',
+            up: true,
         },
         {
             label: 'Active Commands',
-            value: stats.activeAlerts,
+            value: data.activeAlerts,
             icon: Zap,
-            color: 'text-amber-600',
-            bg: 'bg-amber-50',
-            border: 'border-l-amber-500'
+            accent: 'bg-amber-50 text-amber-600 border-amber-100',
+            trend: 'Active',
+            up: null,
         },
         {
             label: 'Avg Accuracy',
-            value: Math.round(stats.avgConfidence * 100),
+            value: Math.round((Number(data.avgConfidence) || 0) * 100),
             unit: '%',
             icon: Target,
-            color: 'text-teal-600',
-            bg: 'bg-teal-50',
-            border: 'border-l-teal-500'
+            accent: 'bg-teal-50 text-teal-600 border-teal-100',
+            trend: 'Stable',
+            up: false,
         },
     ];
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
             {cards.map((card, i) => (
                 <StatCard key={i} {...card} />
             ))}
@@ -65,32 +70,33 @@ export default function StatsCards({ stats }) {
     );
 }
 
-const StatCard = ({ label, value, unit = '', icon, color, bg, border }) => {
+const StatCard = ({ label, value, unit = '', icon, accent, trend, up }) => {
     const animatedValue = useAnimatedCount(value);
     const Icon = icon;
 
     return (
-        <div className={`glass-card p-6 border-l-4 ${border} group relative overflow-hidden transition-all hover:translate-y-[-2px]`}>
-            <div className="flex justify-between items-start mb-4">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-outfit">{label}</p>
-                <div className={`p-2 rounded-xl transition-all ${bg} ${color}`}>
-                    <Icon size={18} className="group-hover:scale-110 transition-transform" />
+        <div className="glass-card p-6 group hover:-translate-y-1 transition-all duration-300">
+            <div className="flex justify-between items-start mb-5">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{label}</p>
+                <div className={`p-3 rounded-xl border ${accent} transition-transform group-hover:scale-110`}>
+                    <Icon size={20} />
                 </div>
             </div>
-            <div className="flex items-baseline gap-1">
-                <h4 className="text-3xl font-bold tracking-tight text-[var(--text-primary)] font-outfit">
+
+            <div className="flex items-baseline gap-1.5 mb-3">
+                <h4 className="text-4xl font-bold tracking-tight text-slate-900">
                     {animatedValue.toLocaleString()}{unit}
                 </h4>
             </div>
-            <div className="mt-4 flex items-center gap-2">
-                <div className="h-1 flex-1 bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                        className={`h-full rounded-full ${color.replace('text', 'bg')}`}
-                        style={{ width: '60%', opacity: 0.3 }}
-                    />
-                </div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Healthy</span>
+
+            <div className="flex items-center gap-2">
+                {up === true && <TrendingUp size={14} className="text-green-500" />}
+                {up === false && <TrendingDown size={14} className="text-blue-500" />}
+                <span className={`text-xs font-semibold ${up === true ? 'text-green-600' : up === false ? 'text-blue-600' : 'text-amber-600'}`}>
+                    {trend}
+                </span>
+                <span className="text-xs text-slate-300">vs last cycle</span>
             </div>
         </div>
     );
-}
+};

@@ -1,380 +1,256 @@
-import { useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
-    BarChart3,
-    TrendingUp,
-    PieChart as PieIcon,
-    Calendar,
-    Globe,
-    Filter,
-    Download,
-    Share2,
-    ChevronDown,
-    Info,
-    CheckCircle2,
-    AlertTriangle,
-    Users,
-    Target,
-    ArrowRight,
-    Clock
+    BarChart3, TrendingUp, Zap, Activity, ShieldAlert, Download, RefreshCw, AlertCircle, ChevronRight
 } from 'lucide-react';
-import {
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    PieChart, Pie, Cell, LineChart, Line, AreaChart, Area
-} from 'recharts';
-import { getPredictions, getStats, getModelMetrics } from '../services/api';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell } from 'recharts';
+import { getStats, getModelMetrics } from '../services/api';
 
-const COLORS = ['#2563EB', '#0D9488', '#F59E0B', '#DC2626'];
-
-const Analytics = () => {
-
+const AnalyticsPage = () => {
     const [stats, setStats] = useState(null);
     const [metrics, setMetrics] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [activeFilter, setActiveFilter] = useState('all');
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [statsRes, metricsRes] = await Promise.all([
-                    getStats(),
-                    getModelMetrics()
-                ]);
-                setStats(statsRes.data);
-                setMetrics(metricsRes.data);
-            } catch (err) {
-                console.error('Failed to fetch analytics data:', err);
-            }
-        };
-        fetchData();
+    const fetchData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const [s, m] = await Promise.all([getStats(), getModelMetrics()]);
+            setStats(s.data);
+            setMetrics(m.data);
+        } catch (err) { console.error(err); }
+        finally { setIsLoading(false); }
     }, []);
 
-    const bestModel = metrics?.best_model || 'RandomForest';
-    const modelData = metrics?.results?.[bestModel];
+    useEffect(() => { fetchData(); }, [fetchData]);
 
-    const riskBreakdown = [
-        { name: 'Safe Zones', value: 72, color: '#2563EB' },
-        { name: 'Low Monitoring', value: 20, color: '#0D9488' },
-        { name: 'Critical Threshold', value: 8, color: '#F59E0B' },
+    const trendData = Array.from({ length: 12 }, (_, i) => ({
+        name: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i],
+        predictions: Math.floor(Math.random() * 100) + 20,
+        alerts: Math.floor(Math.random() * 30) + 5,
+    }));
+
+    const riskDist = stats?.risk_distribution || { high: 0, medium: 0, low: 0 };
+    const pieData = [
+        { name: 'High', value: riskDist.high || 15, color: '#DC2626' },
+        { name: 'Medium', value: riskDist.medium || 35, color: '#D97706' },
+        { name: 'Low', value: riskDist.low || 50, color: '#16A34A' },
+    ];
+    const totalPie = pieData.reduce((sum, d) => sum + d.value, 0);
+
+    const confMatrix = metrics?.confusion_matrix || { tp: 142, fp: 8, fn: 12, tn: 238 };
+    const accuracy = metrics?.best_accuracy || 0.94;
+
+    const regionalData = [
+        { zone: 'Coimbatore Central', risk: 'HIGH', predictions: 42, alerts: 8, confidence: '94%' },
+        { zone: 'Western Ghats Basin', risk: 'MEDIUM', predictions: 28, alerts: 3, confidence: '91%' },
+        { zone: 'Noyyal River Zone', risk: 'LOW', predictions: 15, alerts: 1, confidence: '97%' },
+        { zone: 'Singanallur Lake', risk: 'HIGH', predictions: 38, alerts: 6, confidence: '89%' },
+        { zone: 'Perur Sector', risk: 'LOW', predictions: 12, alerts: 0, confidence: '98%' },
     ];
 
-    const trendData = [
-        { name: 'Week 1', predicted: 400, historical: 240 },
-        { name: 'Week 2', predicted: 300, historical: 139 },
-        { name: 'Week 3', predicted: 200, historical: 980 },
-        { name: 'Week 4', predicted: 278, historical: 390 },
-        { name: 'Week 5', predicted: 189, historical: 480 },
-    ];
-
-    return (
-        <div className="space-y-8 animate-in fade-in duration-700">
-            {/* Header with Filters */}
-            <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6">
-                <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-[10px] font-bold text-green-600 uppercase tracking-widest">
-                        <span className="w-1.5 h-1.5 bg-green-600 rounded-full animate-status" />
-                        System Live
-                    </div>
-                    <h2 className="text-4xl font-extrabold tracking-tight text-[var(--text-primary)] font-outfit">Analytics & Trends</h2>
-                    <p className="text-[var(--text-secondary)] font-medium">Real-time AI-driven waterborne disease prediction insights and model performance metrics.</p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-3">
-                    <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-[var(--text-secondary)] shadow-sm hover:bg-slate-50 transition-all">
-                        <Download size={14} /> Export CSV
-                    </button>
-                    <button className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all">
-                        <Share2 size={14} /> Share Report
-                    </button>
-                </div>
-            </div>
-
-            {/* Filter Bar */}
-            <div className="flex flex-wrap items-center gap-3 bg-[var(--bg-card)] p-3 rounded-2xl border border-[var(--border-subtle)] shadow-sm">
-                <FilterDropdown icon={Calendar} label="Last 30 Days" />
-                <FilterDropdown icon={Globe} label="Global View" />
-                <FilterDropdown icon={AlertTriangle} label="All Severities" />
-                <FilterDropdown icon={Target} label="Model v2.4 (Active)" />
-                <button className="ml-auto text-[11px] font-black text-blue-600 uppercase tracking-widest hover:text-blue-700 transition-colors px-4">Reset Filters</button>
-            </div>
-
-            {/* Summary Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <AnalyticsMetric
-                    label="Confidence Score"
-                    value={`${Math.round((stats?.avg_confidence || 0.942) * 100)}%`}
-                    trend="+1.2%"
-                    icon={CheckCircle2}
-                    color="blue"
-                    progress={Math.round((stats?.avg_confidence || 0.942) * 100)}
-                />
-                <AnalyticsMetric
-                    label="Active Alerts"
-                    value={stats?.active_alerts || 18}
-                    trend="-5%"
-                    trendDown={true}
-                    icon={AlertTriangle}
-                    color="amber"
-                    chart={true}
-                />
-                <AnalyticsMetric
-                    label="Model Accuracy"
-                    value={`${Math.round((metrics?.best_accuracy || 0.9238) * 100)}%`}
-                    trend="+0.4%"
-                    icon={Target}
-                    color="teal"
-                    progress={Math.round((metrics?.best_accuracy || 0.9238) * 100)}
-                />
-                <AnalyticsMetric
-                    label="Communities Monitored"
-                    value="1,402"
-                    trend="Stable"
-                    icon={Users}
-                    color="indigo"
-                    footer="Updated: 2 mins ago"
-                />
-            </div>
-
-            {/* Charts Row */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                {/* Trend Chart */}
-                <div className="glass-card p-8 space-y-8">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 text-[var(--text-primary)]">
-                            <TrendingUp size={20} className="text-blue-600" />
-                            <h3 className="font-bold text-lg font-outfit">Prediction Trends (30 Days)</h3>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-blue-600 uppercase">
-                                <span className="w-2 h-2 rounded-full bg-blue-600" /> Predicted
-                            </div>
-                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase">
-                                <span className="w-2 h-2 rounded-full bg-slate-200" /> Historical
-                            </div>
-                        </div>
-                    </div>
-                    <div className="h-80 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={trendData}>
-                                <defs>
-                                    <linearGradient id="colorPred" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#2563EB" stopOpacity={0.1} />
-                                        <stop offset="95%" stopColor="#2563EB" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                                <Tooltip
-                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                                    itemStyle={{ fontSize: '11px', fontWeight: 'bold' }}
-                                />
-                                <Area type="monotone" dataKey="predicted" stroke="#2563EB" strokeWidth={3} fillOpacity={1} fill="url(#colorPred)" />
-                                <Area type="monotone" dataKey="historical" stroke="#CBD5E1" strokeWidth={2} fillOpacity={0} />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </div>
-                    <p className="text-[10px] italic text-[var(--text-tertiary)] text-center">AI identifies 14% deviation in coastal data compared to previous cycle.</p>
-                </div>
-
-                {/* Confusion Matrix Placeholder Style */}
-                <div className="glass-card p-8 space-y-8">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 text-[var(--text-primary)]">
-                            <PieIcon size={20} className="text-teal-600" />
-                            <h3 className="font-bold text-lg font-outfit">Confusion Matrix & Precision</h3>
-                        </div>
-                        <button className="text-[10px] font-bold text-blue-600 uppercase tracking-widest hover:underline">Detailed Analytics</button>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="grid grid-cols-2 gap-2">
-                            <MatrixBox label="High (TP)" value={modelData?.confusion_matrix?.[0]?.[0] || 63} color="blue" />
-                            <MatrixBox label="Low (TP)" value={modelData?.confusion_matrix?.[1]?.[1] || 68} color="teal" />
-                            <MatrixBox label="Med (TP)" value={modelData?.confusion_matrix?.[2]?.[2] || 63} color="amber" />
-                            <MatrixBox label="Total Test" value={metrics?.test_size || 210} color="slate" />
-                        </div>
-                        <div className="space-y-5 px-4">
-                            <PrecisionBar label="Macro F1" value={(modelData?.f1_macro || 0.9239) * 100} color="blue" />
-                            <PrecisionBar label="Weighted F1" value={(modelData?.f1_weighted || 0.9239) * 100} color="teal" />
-                            <PrecisionBar label="CV Accuracy" value={(modelData?.cv_accuracy_mean || 0.9162) * 100} color="amber" />
-                        </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-8 border-t border-slate-100 text-[10px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">
-                        <div className="flex items-center gap-2"><Info size={12} /> Validation Dataset: 2,026 Samples</div>
-                        <div className="flex items-center gap-2"><Clock size={12} /> Last Training: Aug 24, 2023</div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Bottom Row */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                {/* Global Risk Breakdown */}
-                <div className="glass-card p-8 space-y-8">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 text-[var(--text-primary)]">
-                            <Globe size={20} className="text-blue-600" />
-                            <h3 className="font-bold text-lg font-outfit">Global Risk Breakdown</h3>
-                        </div>
-                        <span className="text-[9px] font-bold bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full uppercase tracking-widest">Real-time</span>
-                    </div>
-
-                    <div className="flex items-center gap-12 py-4">
-                        <div className="relative w-48 h-48 flex items-center justify-center">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie data={riskBreakdown} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                                        {riskBreakdown.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
-                                        ))}
-                                    </Pie>
-                                </PieChart>
-                            </ResponsiveContainer>
-                            <div className="absolute flex flex-col items-center">
-                                <span className="text-3xl font-extrabold text-[var(--text-primary)]">1,402</span>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase">Total Nodes</span>
-                            </div>
-                        </div>
-                        <div className="flex-1 space-y-4">
-                            {riskBreakdown.map((item) => (
-                                <div key={item.name} className="flex items-center justify-between text-xs py-2 border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors px-2 rounded-lg">
-                                    <div className="flex items-center gap-3">
-                                        <span className="w-3 h-3 rounded-md" style={{ background: item.color }} />
-                                        <span className="font-bold text-[var(--text-secondary)]">{item.name}</span>
-                                    </div>
-                                    <span className="font-bold text-[var(--text-primary)]">{(item.value / 100 * 100).toFixed(0)}%</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Regional Risk Ranking Table Placeholder */}
-                <div className="glass-card p-8 space-y-8">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 text-[var(--text-primary)]">
-                            <BarChart3 size={20} className="text-indigo-600" />
-                            <h3 className="font-bold text-lg font-outfit">Regional Risk Ranking</h3>
-                        </div>
-                        <button className="p-2 hover:bg-slate-50 rounded-lg transition-colors"><Filter size={18} className="text-slate-400" /></button>
-                    </div>
-
-                    <table className="w-full">
-                        <thead>
-                            <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left">
-                                <th className="pb-4 font-bold">Region</th>
-                                <th className="pb-4 font-bold">Risk Level</th>
-                                <th className="pb-4 font-bold">Predicted Cases</th>
-                                <th className="pb-4 font-bold">Trend</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            <RegionRow id="NO" name="North Delta" level="CRITICAL" cases="452 (est.)" trend="up" />
-                            <RegionRow id="SO" name="Southern Basin" level="HIGH" cases="128 (est.)" trend="down" />
-                            <RegionRow id="EA" name="Eastern Coast" level="STABLE" cases="12 (est.)" trend="neutral" />
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div className="text-center py-6">
-                <p className="text-[10px] font-bold text-slate-300 uppercase tracking-[0.3em]">Waterborne AI Command Center • Internal Access Only • © 2026</p>
-            </div>
-        </div>
-    );
-};
-
-const FilterDropdown = ({ icon, label }) => {
-    const Icon = icon;
-    return (
-        <button className="flex items-center gap-2.5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-bold text-[var(--text-secondary)] hover:border-blue-500/20 transition-all group">
-            <Icon size={14} className="text-slate-400 group-hover:text-blue-500 transition-colors" />
-            {label}
-            <ChevronDown size={14} className="text-slate-300 ml-1" />
-        </button>
-    );
-};
-
-const AnalyticsMetric = ({ label, value, trend, trendDown, icon, color, progress, footer, chart }) => {
-    const Icon = icon;
-    const colorClasses = {
-        blue: 'text-blue-600 bg-blue-50',
-        amber: 'text-amber-600 bg-amber-50',
-        teal: 'text-teal-600 bg-teal-50',
-        indigo: 'text-indigo-600 bg-indigo-50',
+    const riskBadge = (risk) => {
+        switch (risk) {
+            case 'HIGH': return 'bg-red-50 text-red-600 border-red-100';
+            case 'MEDIUM': return 'bg-amber-50 text-amber-600 border-amber-100';
+            default: return 'bg-green-50 text-green-600 border-green-100';
+        }
     };
 
     return (
-        <div className="glass-card p-6 relative group overflow-hidden">
-            <div className="flex justify-between items-start mb-6">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
-                <div className={`p-2 rounded-xl border border-transparent group-hover:border-current transition-all ${colorClasses[color]}`}>
-                    <Icon size={16} />
+        <div className="space-y-8 animate-fade-in">
+            {/* Header */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
+                        <BarChart3 size={28} className="text-blue-600" />
+                        Predictive Analytics
+                    </h2>
+                    <p className="text-sm text-slate-500 mt-1">Model performance & risk intelligence overview</p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <div className="flex bg-slate-100 rounded-lg p-1 gap-1">
+                        {['all', '7d', '30d', '90d'].map(f => (
+                            <button key={f} onClick={() => setActiveFilter(f)}
+                                className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${activeFilter === f ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+                                {f === 'all' ? 'All Time' : f}
+                            </button>
+                        ))}
+                    </div>
+                    <button onClick={fetchData} className="p-2.5 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600 transition-all">
+                        <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
+                    </button>
+                    <button className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all">
+                        <Download size={16} /> Export
+                    </button>
                 </div>
             </div>
-            <div className="flex items-baseline gap-3 mb-4">
-                <h4 className="text-3xl font-extrabold text-[var(--text-primary)] tracking-tight">{value}</h4>
-                <span className={`text-[11px] font-bold ${trendDown ? 'text-red-500' : 'text-green-600'}`}>
-                    {trendDown ? '↘' : '↗'} {trend}
-                </span>
+
+            {/* Metric Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                <MetricCard label="Total Predictions" value={stats?.total_predictions || 0} icon={Activity} color="blue" trend="+12.4%" />
+                <MetricCard label="Active Alerts" value={stats?.active_alerts || 0} icon={AlertCircle} color="amber" trend="3 new" />
+                <MetricCard label="Model Accuracy" value={`${Math.round(accuracy * 100)}%`} icon={Zap} color="teal" trend="v2.1" />
+                <MetricCard label="High Risk Zones" value={riskDist.high || 0} icon={ShieldAlert} color="red" trend="Monitoring" />
             </div>
-            {progress ? (
-                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div className={`h-full rounded-full transition-all duration-1000 ${color === 'blue' ? 'bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.4)]' : 'bg-teal-600 shadow-[0_0_8px_rgba(13,148,136,0.4)]'
-                        }`} style={{ width: `${progress}%` }} />
+
+            {/* Charts Row */}
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                {/* Area Chart */}
+                <div className="xl:col-span-2 glass-card p-6">
+                    <div className="flex items-center justify-between mb-5">
+                        <h3 className="text-base font-semibold text-slate-800">Trend Analysis</h3>
+                        <div className="flex items-center gap-5">
+                            <div className="flex items-center gap-2 text-xs font-medium text-blue-600">
+                                <div className="w-3 h-3 rounded-full bg-blue-600" /> Predictions
+                            </div>
+                            <div className="flex items-center gap-2 text-xs font-medium text-orange-500">
+                                <div className="w-3 h-3 rounded-full bg-orange-500" /> Alerts
+                            </div>
+                        </div>
+                    </div>
+                    <div style={{ width: '100%', height: 320 }}>
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                            <AreaChart data={trendData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+                                <defs>
+                                    <linearGradient id="blueFill" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.12} />
+                                        <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+                                    </linearGradient>
+                                    <linearGradient id="orangeFill" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#F97316" stopOpacity={0.12} />
+                                        <stop offset="95%" stopColor="#F97316" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                                <XAxis dataKey="name" tick={{ fill: '#94A3B8', fontSize: 12 }} tickLine={false} axisLine={{ stroke: '#E2E8F0' }} />
+                                <YAxis tick={{ fill: '#94A3B8', fontSize: 12 }} tickLine={false} axisLine={false} />
+                                <Tooltip contentStyle={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', fontSize: '13px' }} />
+                                <Area type="monotone" dataKey="predictions" stroke="#3B82F6" strokeWidth={2.5} fill="url(#blueFill)" />
+                                <Area type="monotone" dataKey="alerts" stroke="#F97316" strokeWidth={2.5} fill="url(#orangeFill)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>
-            ) : chart ? (
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Trend: Downward</p>
-            ) : (
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{footer}</p>
-            )}
+
+                {/* Confusion Matrix */}
+                <div className="glass-card p-6">
+                    <h3 className="text-base font-semibold text-slate-800 mb-5">Model Confusion Matrix</h3>
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                        <MatrixCell label="True Positive" value={confMatrix.tp} color="bg-green-50 border-green-200 text-green-700" />
+                        <MatrixCell label="False Positive" value={confMatrix.fp} color="bg-red-50 border-red-200 text-red-700" />
+                        <MatrixCell label="False Negative" value={confMatrix.fn} color="bg-amber-50 border-amber-200 text-amber-700" />
+                        <MatrixCell label="True Negative" value={confMatrix.tn} color="bg-blue-50 border-blue-200 text-blue-700" />
+                    </div>
+                    <div className="border-t border-slate-100 pt-5 space-y-4">
+                        <div className="flex justify-between text-sm">
+                            <span className="text-slate-500 font-medium">Precision</span>
+                            <span className="font-bold text-slate-800">{confMatrix.tp ? Math.round(confMatrix.tp / (confMatrix.tp + confMatrix.fp) * 100) : 0}%</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                            <span className="text-slate-500 font-medium">Recall</span>
+                            <span className="font-bold text-slate-800">{confMatrix.tp ? Math.round(confMatrix.tp / (confMatrix.tp + confMatrix.fn) * 100) : 0}%</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                            <span className="text-slate-500 font-medium">F1 Score</span>
+                            <span className="font-bold text-blue-600">{Math.round(accuracy * 100)}%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Donut + Table */}
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                <div className="glass-card p-6">
+                    <h3 className="text-base font-semibold text-slate-800 mb-5">Risk Distribution</h3>
+                    <div className="flex justify-center" style={{ height: 220 }}>
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                            <PieChart>
+                                <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={3} dataKey="value" stroke="none">
+                                    {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                                </Pie>
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+                    <div className="flex justify-center gap-6 mt-5">
+                        {pieData.map(d => (
+                            <div key={d.name} className="flex items-center gap-2 text-xs font-medium text-slate-500">
+                                <div className="w-3 h-3 rounded-full" style={{ background: d.color }} />
+                                {d.name} ({totalPie > 0 ? Math.round(d.value / totalPie * 100) : 0}%)
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="xl:col-span-2 glass-card p-0 overflow-hidden">
+                    <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+                        <h3 className="text-base font-semibold text-slate-800">Regional Risk Analysis</h3>
+                        <button className="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1">
+                            View All <ChevronRight size={16} />
+                        </button>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="text-xs font-semibold text-slate-400 uppercase tracking-wider text-left bg-slate-50 border-b border-slate-100">
+                                    <th className="px-6 py-4">Zone</th>
+                                    <th className="px-6 py-4">Risk Level</th>
+                                    <th className="px-6 py-4">Predictions</th>
+                                    <th className="px-6 py-4">Alerts</th>
+                                    <th className="px-6 py-4 text-right">Confidence</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50">
+                                {regionalData.map((row, i) => (
+                                    <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                                        <td className="px-6 py-4 text-sm font-medium text-slate-800">{row.zone}</td>
+                                        <td className="px-6 py-4">
+                                            <span className={`text-xs font-bold px-3 py-1.5 rounded-full border ${riskBadge(row.risk)}`}>{row.risk}</span>
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-slate-600 font-medium">{row.predictions}</td>
+                                        <td className="px-6 py-4 text-sm text-slate-600 font-medium">{row.alerts}</td>
+                                        <td className="px-6 py-4 text-sm text-right font-bold text-slate-800">{row.confidence}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };
 
-const MatrixBox = ({ label, value, color }) => (
-    <div className={`p-4 rounded-xl border-2 ${color === 'blue' ? 'bg-blue-50 border-blue-500/20' : color === 'teal' ? 'bg-teal-50 border-teal-500/20' : 'bg-slate-50 border-slate-100'} text-center`}>
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{label}</p>
-        <p className={`text-xl font-extrabold ${color === 'blue' ? 'text-blue-600' : color === 'teal' ? 'text-teal-600' : 'text-slate-600'}`}>{value}</p>
-    </div>
-);
+const MetricCard = ({ label, value, icon, color, trend }) => {
+    const Icon = icon;
+    const colorMap = {
+        blue: 'bg-blue-50 text-blue-600 border-blue-100',
+        amber: 'bg-amber-50 text-amber-600 border-amber-100',
+        teal: 'bg-teal-50 text-teal-600 border-teal-100',
+        red: 'bg-red-50 text-red-600 border-red-100',
+    };
 
-const PrecisionBar = ({ label, value, color, isScore }) => (
-    <div className="space-y-2">
-        <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest">
-            <span className="text-slate-400">{label}</span>
-            <span className={color === 'blue' ? 'text-blue-600' : color === 'teal' ? 'text-teal-600' : 'text-amber-600'}>{value}{isScore ? '' : '%'}</span>
-        </div>
-        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-            <div
-                className={`h-full rounded-full transition-all duration-1000 ${color === 'blue' ? 'bg-blue-600' : color === 'teal' ? 'bg-teal-600' : 'bg-amber-600'
-                    }`}
-                style={{ width: isScore ? `${value * 100}%` : `${value}%` }}
-            />
-        </div>
-    </div>
-);
-
-const RegionRow = ({ id, name, level, cases, trend }) => (
-    <tr className="group hover:bg-slate-50 transition-colors">
-        <td className="py-5 font-bold text-sm text-[var(--text-secondary)] px-2 rounded-l-xl">
-            <div className="flex items-center gap-3">
-                <span className="text-[10px] bg-slate-100 text-slate-500 font-bold px-1.5 py-0.5 rounded leading-none">{id}</span>
-                {name}
+    return (
+        <div className="glass-card p-6 group hover:-translate-y-1 transition-all duration-300">
+            <div className="flex justify-between items-start mb-5">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{label}</p>
+                <div className={`p-3 rounded-xl border ${colorMap[color]} group-hover:scale-110 transition-transform`}>
+                    <Icon size={20} />
+                </div>
             </div>
-        </td>
-        <td className="py-5 px-2">
-            <span className={`text-[9px] font-extrabold px-3 py-1 rounded-full border ${level === 'CRITICAL' ? 'bg-red-50 border-red-100 text-red-600' :
-                level === 'HIGH' ? 'bg-amber-50 border-amber-100 text-amber-600' : 'bg-green-50 border-green-100 text-green-600'
-                }`}>
-                {level}
-            </span>
-        </td>
-        <td className="py-5 font-bold text-sm text-[var(--text-primary)] px-2">{cases}</td>
-        <td className="py-5 px-3 rounded-r-xl">
-            {trend === 'up' && <TrendingUp size={16} className="text-red-500" />}
-            {trend === 'down' && <TrendingUp size={16} className="rotate-180 text-green-500" />}
-            {trend === 'neutral' && <ArrowRight size={16} className="text-slate-300" />}
-        </td>
-    </tr>
+            <p className="text-4xl font-bold text-slate-900 tracking-tight mb-2">{value}</p>
+            <div className="flex items-center gap-2">
+                <TrendingUp size={14} className="text-green-500" />
+                <span className="text-xs font-semibold text-green-600">{trend}</span>
+            </div>
+        </div>
+    );
+};
+
+const MatrixCell = ({ label, value, color }) => (
+    <div className={`p-5 rounded-xl border text-center ${color}`}>
+        <p className="text-3xl font-bold mb-1">{value}</p>
+        <p className="text-xs font-semibold uppercase tracking-wider opacity-70">{label}</p>
+    </div>
 );
 
-export default Analytics;
+export default AnalyticsPage;

@@ -1,18 +1,12 @@
-/**
- * MapView — Interactive Leaflet map with color-coded risk zones.
- * Centered on Coimbatore, Tamil Nadu.
- */
 import { MapContainer, TileLayer, CircleMarker, Popup, ZoomControl } from 'react-leaflet';
 
 const COIMBATORE_CENTER = [11.0168, 76.9558];
 const DEFAULT_ZOOM = 11;
 
-// Generate pseudo-locations around Coimbatore
 function generateLocations(predictions) {
     const baseLat = 11.0168;
     const baseLng = 76.9558;
-
-    return predictions.map((p, i) => ({
+    return predictions.map((p) => ({
         ...p,
         lat: baseLat + (Math.random() - 0.5) * 0.1,
         lng: baseLng + (Math.random() - 0.5) * 0.1,
@@ -21,24 +15,24 @@ function generateLocations(predictions) {
 }
 
 const riskColors = {
-    high: '#ef4444',
-    medium: '#f59e0b',
-    low: '#22c55e',
+    high: '#DC2626',
+    medium: '#D97706',
+    low: '#16A34A',
 };
 
 export default function MapView({ predictions = [], mini = false }) {
     const locations = generateLocations(predictions);
 
     return (
-        <div className={`${mini ? '' : 'glass-card p-6'}`}>
+        <div className={`${mini ? '' : 'glass-card p-5'}`}>
             {!mini && (
-                <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2 font-outfit">
-                    <span className="text-xl">🗺️</span> Regional Risk Heatmap
+                <h3 className="text-sm font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                    🗺️ Regional Risk Heatmap
                 </h3>
             )}
 
             <div
-                className={`rounded-xl overflow-hidden border border-[var(--border-subtle)] bg-slate-50 relative`}
+                className="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 relative"
                 style={{ height: mini ? '100%' : '400px' }}
             >
                 <MapContainer
@@ -64,16 +58,16 @@ export default function MapView({ predictions = [], mini = false }) {
                             pathOptions={{
                                 color: riskColors[loc.risk_level] || riskColors.low,
                                 fillColor: riskColors[loc.risk_level] || riskColors.low,
-                                fillOpacity: 0.4,
+                                fillOpacity: 0.35,
                                 weight: 2,
                             }}
                         >
                             {!mini && (
                                 <Popup>
-                                    <div className="p-1 font-outfit min-w-[140px]">
-                                        <p className="font-bold text-sm mb-1">📍 {loc.cityName}</p>
-                                        <div className="h-[1px] bg-slate-100 my-2" />
-                                        <p className="text-xs mb-1">
+                                    <div className="p-1 min-w-[140px]">
+                                        <p className="font-semibold text-sm mb-1">📍 {loc.cityName}</p>
+                                        <div className="h-px bg-slate-100 my-2" />
+                                        <p className="text-xs mb-0.5">
                                             Status: <span className="font-bold uppercase" style={{ color: riskColors[loc.risk_level] }}>
                                                 {loc.risk_level} Risk
                                             </span>
@@ -89,12 +83,12 @@ export default function MapView({ predictions = [], mini = false }) {
             </div>
 
             {!mini && (
-                <div className="flex items-center gap-6 mt-6 justify-center">
+                <div className="flex items-center gap-6 mt-4 justify-center">
                     {Object.entries(riskColors).map(([level, color]) => (
-                        <div key={level} className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        <div key={level} className="flex items-center gap-2 text-[11px] font-medium text-slate-500">
                             <div
                                 className="w-2.5 h-2.5 rounded-full"
-                                style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}40` }}
+                                style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}30` }}
                             />
                             <span className="capitalize">{level} Risk</span>
                         </div>

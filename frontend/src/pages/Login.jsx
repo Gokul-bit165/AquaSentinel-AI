@@ -1,246 +1,175 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { getModelMetrics } from '../services/api';
 import {
-    ShieldAlert,
-    ArrowRight,
-    Mail,
-    Lock,
-    Chrome,
-    ShieldCheck,
-    TrendingUp,
-    ExternalLink,
-    ChevronRight,
-    Activity,
-    History
+    User, Shield, Droplets, Eye, EyeOff, ArrowRight,
+    CheckCircle2, TrendingUp, Zap, Activity
 } from 'lucide-react';
+import { getModelMetrics } from '../services/api';
 
 const Login = () => {
-    const [role, setRole] = useState('user');
-    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
-
-    const [accuracy, setAccuracy] = useState(0.942);
+    const [role, setRole] = useState('user');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [modelAccuracy, setModelAccuracy] = useState(null);
 
     useEffect(() => {
-        const fetchMetrics = async () => {
-            try {
-                const res = await getModelMetrics();
-                setAccuracy(res.data.best_accuracy);
-            } catch (err) {
-                console.error('Failed to fetch accuracy for login:', err);
-            }
-        };
-        fetchMetrics();
+        getModelMetrics()
+            .then(res => setModelAccuracy(res.data?.best_accuracy))
+            .catch(() => setModelAccuracy(0.94));
     }, []);
 
-    const handleSignIn = (e) => {
+    const handleLogin = (e) => {
         e.preventDefault();
-        setLoading(true);
-        // Simulate auth
-        setTimeout(() => {
-            navigate(role === 'admin' ? '/admin' : '/dashboard');
-        }, 1500);
+        navigate(role === 'admin' ? '/admin' : '/dashboard');
     };
 
     return (
-        <div className="min-h-screen bg-[var(--bg-secondary)] flex flex-col font-outfit">
-            {/* Top Header */}
-            <header className="p-8 flex justify-between items-center max-w-7xl mx-auto w-full">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[var(--accent-primary)] flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-                        <ShieldAlert size={24} />
-                    </div>
-                    <div>
-                        <h1 className="font-bold text-xl leading-none">AquaSentinel AI</h1>
-                        <p className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-widest font-bold mt-1">Secure Command Portal</p>
-                    </div>
-                </div>
-                <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 bg-green-500 rounded-full animate-status"></span>
-                        <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wider">Live System Active</span>
-                    </div>
-                    <button className="text-[13px] font-medium text-[var(--text-secondary)] hover:text-blue-600 transition-colors">Documentation</button>
-                </div>
-            </header>
+        <div className="min-h-screen bg-[var(--bg-secondary)] flex items-center justify-center p-6">
+            <div className="w-full max-w-[1080px] grid grid-cols-1 lg:grid-cols-2 gap-0 bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
 
-            {/* Main Content */}
-            <main className="flex-1 flex items-center justify-center p-8">
-                <div className="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+                {/* Left — Value Proposition */}
+                <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-12 flex flex-col justify-between relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-72 h-72 bg-blue-600/10 blur-[100px] rounded-full -mr-36 -mt-36" />
+                    <div className="absolute bottom-0 left-0 w-56 h-56 bg-teal-500/10 blur-[80px] rounded-full -ml-28 -mb-28" />
 
-                    {/* Left Side: Value Prop */}
-                    <div className="space-y-12">
-                        <div className="space-y-6">
-                            <h2 className="text-7xl font-extrabold tracking-tight leading-[1.1] text-[var(--text-primary)]">
-                                Predicting Safety, <br />
-                                <span className="text-[var(--accent-primary)]">Protecting <br />Communities.</span>
-                            </h2>
-                            <p className="text-lg text-[var(--text-secondary)] leading-relaxed max-w-md font-medium opacity-80">
-                                The enterprise-standard for waterborne disease forecasting and operational response command.
-                            </p>
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-10">
+                            <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-600/30">
+                                <Droplets size={24} fill="currentColor" fillOpacity={0.2} />
+                            </div>
+                            <div>
+                                <h1 className="text-xl font-bold text-white font-outfit tracking-tight">AquaSentinel</h1>
+                                <p className="text-[10px] text-blue-400/70 uppercase font-semibold tracking-[0.15em]">AI Command Platform</p>
+                            </div>
                         </div>
 
-                        {/* AI Insights Card - High Fidelity Matching Image 1 */}
-                        <div className="bg-white rounded-[32px] p-10 border border-[var(--border-subtle)] shadow-2xl shadow-blue-500/5 relative overflow-hidden group border-l-[6px] border-l-blue-600">
-                            <div className="absolute top-8 right-8">
-                                <span className="text-[10px] font-black bg-blue-50 text-blue-600 px-3 py-1 rounded-full uppercase tracking-tighter outline outline-1 outline-blue-100">
-                                    VERIFIED V2.1
-                                </span>
-                            </div>
+                        <h2 className="text-3xl font-bold text-white font-outfit leading-tight mb-4">
+                            Predictive Intelligence<br />for Water Safety
+                        </h2>
+                        <p className="text-base text-slate-400 leading-relaxed mb-8 max-w-sm">
+                            Real-time flood risk assessment powered by machine learning. Protect communities with data-driven insights.
+                        </p>
 
-                            <div className="flex items-center gap-2.5 text-[var(--text-tertiary)] mb-8">
-                                <Activity size={18} className="text-blue-500" />
-                                <span className="text-[11px] uppercase font-black tracking-[0.2em]">AI Insights Panel</span>
-                            </div>
-
-                            <div className="flex items-baseline gap-4 mb-12">
-                                <span className="text-8xl font-black tracking-tighter text-[var(--text-primary)] leading-none">{Math.round(accuracy * 1000) / 10}%</span>
-                                <div>
-                                    <p className="font-black text-[var(--text-primary)] text-base">Current Accuracy</p>
-                                    <p className="text-[var(--text-tertiary)] text-[11px] font-bold">Real-time Model Validation</p>
+                        <div className="space-y-4">
+                            {[
+                                { icon: CheckCircle2, text: 'Real-time sensor monitoring', color: 'text-green-400' },
+                                { icon: TrendingUp, text: 'Predictive risk modeling', color: 'text-blue-400' },
+                                { icon: Zap, text: 'Instant alert systems', color: 'text-amber-400' },
+                            ].map((item, i) => (
+                                <div key={i} className="flex items-center gap-3">
+                                    <item.icon size={18} className={item.color} />
+                                    <span className="text-sm text-slate-300 font-medium">{item.text}</span>
                                 </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* AI Insights Card */}
+                    <div className="relative z-10 mt-10 p-6 bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl">
+                        <div className="flex items-center gap-2 text-blue-400 mb-4">
+                            <Activity size={16} />
+                            <span className="text-xs font-semibold uppercase tracking-wider">AI System Status</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div>
+                                <p className="text-2xl font-bold text-white">{modelAccuracy ? `${Math.round(modelAccuracy * 100)}%` : '—'}</p>
+                                <p className="text-xs text-slate-400 mt-1">Accuracy</p>
+                            </div>
+                            <div>
+                                <p className="text-2xl font-bold text-white">24/7</p>
+                                <p className="text-xs text-slate-400 mt-1">Monitoring</p>
+                            </div>
+                            <div>
+                                <p className="text-2xl font-bold text-white">&lt;2s</p>
+                                <p className="text-xs text-slate-400 mt-1">Response</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Right — Login Form */}
+                <div className="p-12 flex flex-col justify-center">
+                    <div className="max-w-sm mx-auto w-full">
+                        <h3 className="text-2xl font-bold text-slate-900 font-outfit mb-2">Welcome back</h3>
+                        <p className="text-sm text-slate-500 mb-8">Sign in to your command station</p>
+
+                        {/* Role Toggle */}
+                        <div className="flex bg-slate-100 rounded-xl p-1.5 mb-8">
+                            <button
+                                onClick={() => setRole('user')}
+                                className={`flex-1 flex items-center justify-center gap-2.5 py-3 rounded-lg text-sm font-semibold transition-all ${role === 'user'
+                                    ? 'bg-white text-slate-900 shadow-sm'
+                                    : 'text-slate-400 hover:text-slate-600'
+                                    }`}
+                            >
+                                <User size={16} /> Operator
+                            </button>
+                            <button
+                                onClick={() => setRole('admin')}
+                                className={`flex-1 flex items-center justify-center gap-2.5 py-3 rounded-lg text-sm font-semibold transition-all ${role === 'admin'
+                                    ? 'bg-white text-slate-900 shadow-sm'
+                                    : 'text-slate-400 hover:text-slate-600'
+                                    }`}
+                            >
+                                <Shield size={16} /> Commander
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleLogin} className="space-y-5">
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Email Address</label>
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={e => setEmail(e.target.value)}
+                                    placeholder="operator@aquasentinel.ai"
+                                    className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:bg-white transition-all placeholder:text-slate-400"
+                                />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-12 border-t border-slate-100 pt-10">
-                                <div>
-                                    <p className="text-[var(--text-tertiary)] text-[10px] uppercase font-black tracking-[0.2em] mb-2">Last Retrained</p>
-                                    <p className="font-black text-sm text-[var(--text-secondary)]">Oct 24, 2023</p>
-                                </div>
-                                <div>
-                                    <p className="text-[var(--text-tertiary)] text-[10px] uppercase font-black tracking-[0.2em] mb-2">Transparency</p>
-                                    <button className="flex items-center gap-2 font-black text-sm text-blue-600 hover:text-blue-700 transition-colors">
-                                        Audit Logs <ExternalLink size={14} />
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Password</label>
+                                <div className="relative">
+                                    <input
+                                        type={showPassword ? 'text' : 'password'}
+                                        value={password}
+                                        onChange={e => setPassword(e.target.value)}
+                                        placeholder="••••••••"
+                                        className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:bg-white transition-all placeholder:text-slate-400"
+                                    />
+                                    <button type="button" onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
+                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                     </button>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Micro Icons */}
-                        <div className="flex items-center gap-6 opacity-30">
-                            <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 group-hover:scale-110 transition-transform"><ShieldCheck size={20} /></div>
-                            <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 group-hover:scale-110 transition-transform"><Activity size={20} /></div>
-                            <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 group-hover:scale-110 transition-transform"><History size={20} /></div>
-                        </div>
-                    </div>
-
-                    {/* Right Side: Login Form */}
-                    <div className="flex justify-center lg:justify-end">
-                        <div className="bg-white p-10 rounded-[40px] border border-[var(--border-subtle)] shadow-2xl w-full max-w-md relative">
-                            <div className="space-y-2 mb-10">
-                                <h3 className="text-3xl font-bold text-[var(--text-primary)]">Secure Login</h3>
-                                <p className="text-sm text-[var(--text-secondary)]">Enter your credentials to access the command portal.</p>
+                            <div className="flex items-center justify-between pt-1">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                                    <span className="text-xs font-medium text-slate-500">Remember me</span>
+                                </label>
+                                <button type="button" className="text-xs font-semibold text-blue-600 hover:underline">Forgot password?</button>
                             </div>
 
-                            {/* Role Toggle */}
-                            <div className="p-1.5 bg-[var(--bg-tertiary)] rounded-2xl flex gap-1 mb-8">
-                                <button
-                                    onClick={() => setRole('user')}
-                                    className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all ${role === 'user'
-                                        ? 'bg-white shadow-lg text-blue-600'
-                                        : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
-                                        }`}
-                                >
-                                    Platform User
-                                </button>
-                                <button
-                                    onClick={() => setRole('admin')}
-                                    className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all ${role === 'admin'
-                                        ? 'bg-white shadow-lg text-blue-600'
-                                        : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
-                                        }`}
-                                >
-                                    System Administrator
-                                </button>
-                            </div>
+                            <button type="submit"
+                                className="w-full py-3.5 bg-slate-900 text-white text-sm font-semibold rounded-xl hover:bg-blue-600 transition-all duration-300 flex items-center justify-center gap-2.5 shadow-lg shadow-slate-900/10 mt-2"
+                            >
+                                Access {role === 'admin' ? 'Command Center' : 'Dashboard'}
+                                <ArrowRight size={16} />
+                            </button>
+                        </form>
 
-                            <form onSubmit={handleSignIn} className="space-y-6">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest pl-1">Email Address</label>
-                                    <div className="relative group">
-                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] group-focus-within:text-blue-500 transition-colors" size={18} />
-                                        <input
-                                            type="email"
-                                            placeholder="name@organization.com"
-                                            className="w-full bg-[var(--bg-tertiary)] border-2 border-transparent focus:border-blue-500/20 focus:bg-white rounded-2xl py-4 pl-12 pr-4 text-sm font-medium transition-all outline-none"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <div className="flex justify-between items-center px-1">
-                                        <label className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest">Password</label>
-                                        <button type="button" className="text-[10px] font-bold text-blue-600 hover:underline">Forgot Password?</button>
-                                    </div>
-                                    <div className="relative group">
-                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] group-focus-within:text-blue-500 transition-colors" size={18} />
-                                        <input
-                                            type="password"
-                                            placeholder="••••••••"
-                                            className="w-full bg-[var(--bg-tertiary)] border-2 border-transparent focus:border-blue-500/20 focus:bg-white rounded-2xl py-4 pl-12 pr-4 text-sm font-medium transition-all outline-none"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-xl shadow-blue-600/20 transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed group"
-                                >
-                                    {loading ? (
-                                        <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                                    ) : (
-                                        <>
-                                            Sign In to Portal
-                                            <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                                        </>
-                                    )}
-                                </button>
-                            </form>
-
-                            <div className="relative my-10">
-                                <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-100"></span></div>
-                                <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-widest text-[var(--text-tertiary)]">
-                                    <span className="bg-white px-4">Or continue with</span>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <button className="flex items-center justify-center gap-3 border-2 border-slate-100 hover:border-slate-200 py-3 rounded-2xl transition-all">
-                                    <Chrome size={18} />
-                                    <span className="text-xs font-bold text-[var(--text-secondary)]">Google</span>
-                                </button>
-                                <button className="flex items-center justify-center gap-3 border-2 border-slate-100 hover:border-slate-200 py-3 rounded-2xl transition-all">
-                                    <ShieldCheck size={18} />
-                                    <span className="text-xs font-bold text-[var(--text-secondary)]">Azure</span>
-                                </button>
-                            </div>
+                        <div className="mt-8 pt-6 border-t border-slate-100 text-center">
+                            <p className="text-xs text-slate-400">
+                                Secure access protected by end-to-end encryption
+                            </p>
                         </div>
                     </div>
                 </div>
-            </main>
-
-            {/* Footer */}
-            <footer className="p-8 mt-auto border-t border-slate-100">
-                <div className="max-w-7xl mx-auto w-full flex flex-col md:flex-row justify-between items-center gap-6">
-                    <div className="flex items-center gap-2 text-[var(--text-tertiary)] text-[11px] font-medium">
-                        <ShieldCheck size={14} className="text-green-500" />
-                        Enterprise-Grade Security Enabled & AES-256 Encryption
-                    </div>
-
-                    <div className="flex items-center gap-8">
-                        <button className="text-[11px] font-bold text-[var(--text-tertiary)] hover:text-blue-600 transition-colors uppercase tracking-widest">Privacy Policy</button>
-                        <button className="text-[11px] font-bold text-[var(--text-tertiary)] hover:text-blue-600 transition-colors uppercase tracking-widest">Terms of Service</button>
-                        <button className="text-[11px] font-bold text-[var(--text-tertiary)] hover:text-blue-600 transition-colors uppercase tracking-widest">Contact Support</button>
-                    </div>
-
-                    <div className="text-[11px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest">
-                        © 2026 AquaSentinel AI. All rights reserved.
-                    </div>
-                </div>
-            </footer>
+            </div>
         </div>
     );
 };
