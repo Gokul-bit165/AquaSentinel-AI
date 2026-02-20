@@ -56,14 +56,26 @@ def _engineer_features(rainfall: float, ph_level: float,
 def predict(rainfall: float, ph_level: float,
             contamination: float, cases_count: int) -> dict:
     """
-    Predict waterborne disease risk level with engineered features.
-
-    Returns:
-        dict with 'risk_level' (str) and 'confidence' (float)
+    Predict risk level using a Hybrid Approach:
+    1. Expert Rule-Based Overrides (Safety Net)
+    2. ML Hybrid Ensemble (Statistical Core)
     """
-    _load_model()
+    
+    # --- Layer 1: Rule-Based Safety Overrides ---
+    # In public health, certain metrics are so high they override models
+    if contamination > 0.85:
+        return {"risk_level": "high", "confidence": 1.0, "reason": "Critical Contamination Threshold Exceeded"}
+    
+    if rainfall > 450 and contamination > 0.4:
+        return {"risk_level": "high", "confidence": 0.95, "reason": "Heavy Rain + Contamination Interaction"}
 
+    if cases_count > 80:
+         return {"risk_level": "high", "confidence": 0.98, "reason": "Localized Outbreak Pattern Detected"}
+
+    # --- Layer 2: ML Hybrid Ensemble ---
+    _load_model()
     features = _engineer_features(rainfall, ph_level, contamination, cases_count)
+    
     prediction = _model.predict(features)[0]
     probabilities = _model.predict_proba(features)[0]
 
@@ -73,4 +85,5 @@ def predict(rainfall: float, ph_level: float,
     return {
         "risk_level": risk_level,
         "confidence": round(confidence, 4),
+        "method": "hybrid_ensemble"
     }

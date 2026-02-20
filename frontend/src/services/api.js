@@ -38,4 +38,8 @@ export const getModelMetrics = () => api.get('/model/metrics');
 export const getAgentAnalysis = (data) => api.post('/api/v1/agent/analyze', data);
 export const runSimulation = (baseline, updates) => api.post('/api/v1/agent/simulate', { baseline, updates });
 
+// Government Data & Real-Time APIs
+export const getRealtimeWeather = () => api.get('/api/v1/realtime/weather');
+export const getTerritoryPulse = () => api.get('/api/v1/realtime/pulse');
+
 export default api;

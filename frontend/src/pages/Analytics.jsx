@@ -3,10 +3,10 @@ import {
     BarChart3, TrendingUp, Zap, Activity, ShieldAlert, Download, RefreshCw, AlertCircle, ChevronRight
 } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell } from 'recharts';
-import { getStats, getModelMetrics } from '../services/api';
+import { getTerritoryPulse, getModelMetrics } from '../services/api';
 
 const AnalyticsPage = () => {
-    const [stats, setStats] = useState(null);
+    const [territoryPulse, setTerritoryPulse] = useState([]);
     const [metrics, setMetrics] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState('all');
@@ -14,8 +14,11 @@ const AnalyticsPage = () => {
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const [s, m] = await Promise.all([getStats(), getModelMetrics()]);
-            setStats(s.data);
+            const [pulse, m] = await Promise.all([
+                getTerritoryPulse(),
+                getModelMetrics().catch(() => ({ data: null }))
+            ]);
+            setTerritoryPulse(pulse.data || []);
             setMetrics(m.data);
         } catch (err) { console.error(err); }
         finally { setIsLoading(false); }
@@ -23,35 +26,33 @@ const AnalyticsPage = () => {
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
-    const trendData = Array.from({ length: 12 }, (_, i) => ({
-        name: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i],
-        predictions: Math.floor(Math.random() * 100) + 20,
-        alerts: Math.floor(Math.random() * 30) + 5,
+    // Build trend data from actual pulse
+    const trendData = territoryPulse.slice(0, 12).map((w, i) => ({
+        name: w.ward_name?.replace(', Coimbatore', '') || `Zone ${i + 1}`,
+        confidence: Math.round((w.confidence || 0) * 100),
+        contamination: Math.round((w.metrics?.contamination || 0) * 100),
     }));
 
-    const riskDist = stats?.risk_distribution || { high: 0, medium: 0, low: 0 };
+    // Risk distribution from actual pulse
+    const riskDist = territoryPulse.reduce((acc, w) => {
+        acc[w.risk_level] = (acc[w.risk_level] || 0) + 1;
+        return acc;
+    }, { high: 0, medium: 0, low: 0 });
+
     const pieData = [
-        { name: 'High', value: riskDist.high || 15, color: '#DC2626' },
-        { name: 'Medium', value: riskDist.medium || 35, color: '#D97706' },
-        { name: 'Low', value: riskDist.low || 50, color: '#16A34A' },
+        { name: 'High', value: riskDist.high || 0, color: '#DC2626' },
+        { name: 'Medium', value: riskDist.medium || 0, color: '#D97706' },
+        { name: 'Low', value: riskDist.low || 0, color: '#16A34A' },
     ];
     const totalPie = pieData.reduce((sum, d) => sum + d.value, 0);
 
     const confMatrix = metrics?.confusion_matrix || { tp: 142, fp: 8, fn: 12, tn: 238 };
     const accuracy = metrics?.best_accuracy || 0.94;
 
-    const regionalData = [
-        { zone: 'Coimbatore Central', risk: 'HIGH', predictions: 42, alerts: 8, confidence: '94%' },
-        { zone: 'Western Ghats Basin', risk: 'MEDIUM', predictions: 28, alerts: 3, confidence: '91%' },
-        { zone: 'Noyyal River Zone', risk: 'LOW', predictions: 15, alerts: 1, confidence: '97%' },
-        { zone: 'Singanallur Lake', risk: 'HIGH', predictions: 38, alerts: 6, confidence: '89%' },
-        { zone: 'Perur Sector', risk: 'LOW', predictions: 12, alerts: 0, confidence: '98%' },
-    ];
-
     const riskBadge = (risk) => {
         switch (risk) {
-            case 'HIGH': return 'bg-red-50 text-red-600 border-red-100';
-            case 'MEDIUM': return 'bg-amber-50 text-amber-600 border-amber-100';
+            case 'high': return 'bg-red-50 text-red-600 border-red-100';
+            case 'medium': return 'bg-amber-50 text-amber-600 border-amber-100';
             default: return 'bg-green-50 text-green-600 border-green-100';
         }
     };
@@ -87,24 +88,24 @@ const AnalyticsPage = () => {
 
             {/* Metric Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                <MetricCard label="Total Predictions" value={stats?.total_predictions || 0} icon={Activity} color="blue" trend="+12.4%" />
-                <MetricCard label="Active Alerts" value={stats?.active_alerts || 0} icon={AlertCircle} color="amber" trend="3 new" />
+                <MetricCard label="Total Zones Analyzed" value={territoryPulse.length} icon={Activity} color="blue" trend="Live" />
+                <MetricCard label="High Risk Alerts" value={riskDist.high} icon={AlertCircle} color="amber" trend={`${riskDist.high} active`} />
                 <MetricCard label="Model Accuracy" value={`${Math.round(accuracy * 100)}%`} icon={Zap} color="teal" trend="v2.1" />
-                <MetricCard label="High Risk Zones" value={riskDist.high || 0} icon={ShieldAlert} color="red" trend="Monitoring" />
+                <MetricCard label="High Risk Zones" value={riskDist.high} icon={ShieldAlert} color="red" trend="Monitoring" />
             </div>
 
             {/* Charts Row */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                {/* Area Chart */}
+                {/* Area Chart - Confidence by Ward */}
                 <div className="xl:col-span-2 glass-card p-6">
                     <div className="flex items-center justify-between mb-5">
-                        <h3 className="text-base font-semibold text-slate-800">Trend Analysis</h3>
+                        <h3 className="text-base font-semibold text-slate-800">Zone Analysis — Confidence & Contamination</h3>
                         <div className="flex items-center gap-5">
                             <div className="flex items-center gap-2 text-xs font-medium text-blue-600">
-                                <div className="w-3 h-3 rounded-full bg-blue-600" /> Predictions
+                                <div className="w-3 h-3 rounded-full bg-blue-600" /> Confidence
                             </div>
                             <div className="flex items-center gap-2 text-xs font-medium text-orange-500">
-                                <div className="w-3 h-3 rounded-full bg-orange-500" /> Alerts
+                                <div className="w-3 h-3 rounded-full bg-orange-500" /> Contamination
                             </div>
                         </div>
                     </div>
@@ -122,11 +123,11 @@ const AnalyticsPage = () => {
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                                <XAxis dataKey="name" tick={{ fill: '#94A3B8', fontSize: 12 }} tickLine={false} axisLine={{ stroke: '#E2E8F0' }} />
+                                <XAxis dataKey="name" tick={{ fill: '#94A3B8', fontSize: 10 }} tickLine={false} axisLine={{ stroke: '#E2E8F0' }} angle={-20} textAnchor="end" height={50} />
                                 <YAxis tick={{ fill: '#94A3B8', fontSize: 12 }} tickLine={false} axisLine={false} />
                                 <Tooltip contentStyle={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', fontSize: '13px' }} />
-                                <Area type="monotone" dataKey="predictions" stroke="#3B82F6" strokeWidth={2.5} fill="url(#blueFill)" />
-                                <Area type="monotone" dataKey="alerts" stroke="#F97316" strokeWidth={2.5} fill="url(#orangeFill)" />
+                                <Area type="monotone" dataKey="confidence" stroke="#3B82F6" strokeWidth={2.5} fill="url(#blueFill)" />
+                                <Area type="monotone" dataKey="contamination" stroke="#F97316" strokeWidth={2.5} fill="url(#orangeFill)" />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
@@ -183,10 +184,8 @@ const AnalyticsPage = () => {
 
                 <div className="xl:col-span-2 glass-card p-0 overflow-hidden">
                     <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
-                        <h3 className="text-base font-semibold text-slate-800">Regional Risk Analysis</h3>
-                        <button className="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1">
-                            View All <ChevronRight size={16} />
-                        </button>
+                        <h3 className="text-base font-semibold text-slate-800">Regional Risk Analysis (Live)</h3>
+                        <span className="text-xs font-bold text-blue-600">{territoryPulse.length} zones</span>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full">
@@ -194,21 +193,21 @@ const AnalyticsPage = () => {
                                 <tr className="text-xs font-semibold text-slate-400 uppercase tracking-wider text-left bg-slate-50 border-b border-slate-100">
                                     <th className="px-6 py-4">Zone</th>
                                     <th className="px-6 py-4">Risk Level</th>
-                                    <th className="px-6 py-4">Predictions</th>
-                                    <th className="px-6 py-4">Alerts</th>
+                                    <th className="px-6 py-4">Contamination</th>
+                                    <th className="px-6 py-4">Cases</th>
                                     <th className="px-6 py-4 text-right">Confidence</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
-                                {regionalData.map((row, i) => (
+                                {territoryPulse.slice(0, 10).map((row, i) => (
                                     <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-6 py-4 text-sm font-medium text-slate-800">{row.zone}</td>
+                                        <td className="px-6 py-4 text-sm font-medium text-slate-800">{row.ward_name?.replace(', Coimbatore', '')}</td>
                                         <td className="px-6 py-4">
-                                            <span className={`text-xs font-bold px-3 py-1.5 rounded-full border ${riskBadge(row.risk)}`}>{row.risk}</span>
+                                            <span className={`text-xs font-bold px-3 py-1.5 rounded-full border uppercase ${riskBadge(row.risk_level)}`}>{row.risk_level}</span>
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-slate-600 font-medium">{row.predictions}</td>
-                                        <td className="px-6 py-4 text-sm text-slate-600 font-medium">{row.alerts}</td>
-                                        <td className="px-6 py-4 text-sm text-right font-bold text-slate-800">{row.confidence}</td>
+                                        <td className="px-6 py-4 text-sm text-slate-600 font-medium">{Math.round((row.metrics?.contamination || 0) * 100)}%</td>
+                                        <td className="px-6 py-4 text-sm text-slate-600 font-medium">{row.metrics?.cases_count || 0}</td>
+                                        <td className="px-6 py-4 text-sm text-right font-bold text-slate-800">{Math.round((row.confidence || 0) * 100)}%</td>
                                     </tr>
                                 ))}
                             </tbody>

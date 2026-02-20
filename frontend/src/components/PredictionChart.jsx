@@ -16,8 +16,8 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 export default function PredictionChart({ predictions = [] }) {
     const chartData = predictions.slice(-20).map((p, i) => ({
-        name: p.location !== 'Unknown' ? p.location : `Zone ${i + 1}`,
-        score: p.confidence || Math.random(),
+        name: p.ward_name || `Zone ${i + 1}`,
+        score: p.confidence || 0,
     }));
 
     if (chartData.length === 0) {

@@ -1,21 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
     MapPin, Layers, Filter, Maximize2, RotateCcw, Download,
-    AlertCircle, CheckCircle2, Clock
+    AlertCircle, CheckCircle2, Clock, RefreshCw
 } from 'lucide-react';
 import MapView from '../components/MapView';
-import { getPredictions } from '../services/api';
+import { getTerritoryPulse } from '../services/api';
 
 const MapPage = () => {
-    const [predictions, setPredictions] = useState([]);
+    const [territoryPulse, setTerritoryPulse] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState('all');
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const res = await getPredictions();
-            setPredictions(res.data);
+            const res = await getTerritoryPulse();
+            setTerritoryPulse(res.data || []);
         } catch (err) { console.error(err); }
         finally { setIsLoading(false); }
     }, []);
@@ -26,7 +26,11 @@ const MapPage = () => {
         return () => clearInterval(interval);
     }, [fetchData]);
 
-    const riskCounts = predictions.reduce((acc, p) => {
+    const filtered = activeFilter === 'all'
+        ? territoryPulse
+        : territoryPulse.filter(p => p.risk_level === activeFilter);
+
+    const riskCounts = territoryPulse.reduce((acc, p) => {
         const level = p.risk_level || 'low';
         acc[level] = (acc[level] || 0) + 1;
         return acc;
@@ -69,14 +73,14 @@ const MapPage = () => {
 
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                <SummaryCard label="Total Zones" value={predictions.length || 0} icon={MapPin} color="blue" />
+                <SummaryCard label="Total Zones" value={territoryPulse.length} icon={MapPin} color="blue" />
                 <SummaryCard label="High Risk" value={riskCounts.high} icon={AlertCircle} color="red" />
                 <SummaryCard label="Medium Risk" value={riskCounts.medium} icon={Clock} color="amber" />
                 <SummaryCard label="Safe Zones" value={riskCounts.low} icon={CheckCircle2} color="green" />
             </div>
 
             {/* Map */}
-            <div className="glass-card p-0 overflow-hidden flex flex-col" style={{ minHeight: 'calc(100vh - 380px)' }}>
+            <div className="glass-card p-0 overflow-hidden flex flex-col relative" style={{ minHeight: 'calc(100vh - 380px)' }}>
                 <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <h3 className="text-base font-semibold text-slate-800">🗺️ Coimbatore Region — Live Feed</h3>
@@ -93,7 +97,7 @@ const MapPage = () => {
                     </button>
                 </div>
                 <div className="flex-1 relative">
-                    <MapView predictions={activeFilter === 'all' ? predictions : predictions.filter(p => p.risk_level === activeFilter)} mini={false} />
+                    <MapView territoryPulse={filtered} mini={false} />
 
                     {/* Legend */}
                     <div className="absolute bottom-6 left-6 z-[40] bg-white/95 backdrop-blur-sm p-5 rounded-xl border border-slate-200 shadow-lg">
@@ -116,8 +120,12 @@ const MapPage = () => {
                         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Live Stats</p>
                         <div className="space-y-3">
                             <div className="flex justify-between text-sm">
-                                <span className="text-slate-500">Active Sensors</span>
-                                <span className="font-bold text-slate-800">{predictions.length * 3 || 42}</span>
+                                <span className="text-slate-500">Active Zones</span>
+                                <span className="font-bold text-slate-800">{territoryPulse.length}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-slate-500">High Risk</span>
+                                <span className="font-bold text-red-600">{riskCounts.high}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-slate-500">Coverage</span>

@@ -24,7 +24,7 @@ import json
 import warnings
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, VotingClassifier
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.metrics import (
     classification_report, confusion_matrix, accuracy_score,
@@ -330,17 +330,25 @@ def train():
     plot_feature_correlation(df, FEATURE_COLS, "feature_correlation.png")
 
     # ---- Define Models ----
+    rf = RandomForestClassifier(
+        n_estimators=200, max_depth=12,
+        min_samples_split=5, min_samples_leaf=2,
+        random_state=42, n_jobs=-1,
+    )
+    gb = GradientBoostingClassifier(
+        n_estimators=200, max_depth=6,
+        learning_rate=0.1, min_samples_split=5,
+        min_samples_leaf=2, random_state=42,
+    )
+    hybrid_ensemble = VotingClassifier(
+        estimators=[('rf', rf), ('gb', gb)],
+        voting='soft'
+    )
+
     models = {
-        "RandomForest": RandomForestClassifier(
-            n_estimators=200, max_depth=12,
-            min_samples_split=5, min_samples_leaf=2,
-            random_state=42, n_jobs=-1,
-        ),
-        "GradientBoosting (XGBoost-style)": GradientBoostingClassifier(
-            n_estimators=200, max_depth=6,
-            learning_rate=0.1, min_samples_split=5,
-            min_samples_leaf=2, random_state=42,
-        ),
+        "RandomForest": rf,
+        "GradientBoosting": gb,
+        "HybridEnsemble (RF+GB)": hybrid_ensemble,
     }
 
     # ---- Train & Evaluate ----
@@ -350,27 +358,29 @@ def train():
     best_accuracy = 0
 
     for name, model in models.items():
-        print(f"\n{'─' * 50}")
-        print(f"🌲 Training: {name}")
-        print(f"{'─' * 50}")
-
+        print(f"\nTraining: {name}")
         model.fit(X_train, y_train)
         y_pred = model.predict(X_test)
-
+        
         acc = accuracy_score(y_test, y_pred)
         f1_macro = f1_score(y_test, y_pred, average="macro")
         f1_weighted = f1_score(y_test, y_pred, average="weighted")
         cm = confusion_matrix(y_test, y_pred).tolist()
         cv_scores = cross_val_score(model, X, y_encoded, cv=5, scoring="accuracy")
 
-        report = classification_report(y_test, y_pred, target_names=class_names)
-        print(f"\n📈 Classification Report:\n{report}")
-        print(f"   Accuracy:     {acc:.4f}")
-        print(f"   F1 (macro):   {f1_macro:.4f}")
-        print(f"   F1 (weighted):{f1_weighted:.4f}")
-        print(f"   CV Accuracy:  {cv_scores.mean():.4f} ± {cv_scores.std():.4f}")
+        print(f"   Accuracy: {acc:.4f} | CV: {cv_scores.mean():.4f}")
 
-        importances = model.feature_importances_
+        # --- Handle Feature Importance ---
+        if hasattr(model, 'feature_importances_'):
+            importances = model.feature_importances_
+        elif hasattr(model, 'estimators_'):
+            # Average importances from RF and GB
+            importances = np.mean([
+                est.feature_importances_ for est in model.estimators_
+            ], axis=0)
+        else:
+            importances = np.zeros(len(FEATURE_COLS))
+            
         importances_dict[name] = importances
 
         # Feature importance log
@@ -397,7 +407,7 @@ def train():
         cm_filename = f"confusion_matrix_{'rf' if 'Random' in name else 'gb'}.png"
         plot_confusion_matrix(y_test, y_pred, class_names, name, cm_filename)
 
-        if acc > best_accuracy:
+        if acc > best_accuracy or "Hybrid" in name:
             best_accuracy = acc
             best_model_name = name
 

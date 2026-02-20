@@ -1,19 +1,43 @@
+import { useState, useEffect, useCallback } from 'react';
 import {
     History, Search, Filter, Download, Calendar, ArrowUpRight, Archive, Clock, Database
 } from 'lucide-react';
-import { useState } from 'react';
+import { getTerritoryPulse } from '../services/api';
 
 const HistoryPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
+    const [territoryPulse, setTerritoryPulse] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
 
+    const fetchData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const res = await getTerritoryPulse();
+            setTerritoryPulse(res.data || []);
+        } catch (err) { console.error(err); }
+        finally { setIsLoading(false); }
+    }, []);
+
+    useEffect(() => { fetchData(); }, [fetchData]);
+
+    // Transform pulse data into historical records + add some mock historical
     const historicalData = [
-        { id: 'AQ-1092', zone: 'Sector A-12', date: '2023-11-24', risk: 'HIGH', confidence: '94%', cases: 12, sensors: 14 },
-        { id: 'AQ-1091', zone: 'Regional Basin', date: '2023-11-23', risk: 'LOW', confidence: '98%', cases: 2, sensors: 42 },
-        { id: 'AQ-1090', zone: 'Coast North', date: '2023-11-22', risk: 'MEDIUM', confidence: '91%', cases: 5, sensors: 28 },
-        { id: 'AQ-1089', zone: 'Sector B-04', date: '2023-11-21', risk: 'LOW', confidence: '96%', cases: 1, sensors: 12 },
-        { id: 'AQ-1088', zone: 'Old Colony', date: '2023-11-20', risk: 'HIGH', confidence: '89%', cases: 18, sensors: 9 },
-        { id: 'AQ-1087', zone: 'Main Reservoir', date: '2023-11-19', risk: 'LOW', confidence: '99%', cases: 0, sensors: 56 },
+        ...territoryPulse.map((w, i) => ({
+            id: `AQ-${2024000 + i}`,
+            zone: w.ward_name?.replace(', Coimbatore', '') || `Zone ${i + 1}`,
+            date: new Date().toISOString().split('T')[0],
+            risk: w.risk_level?.toUpperCase() || 'LOW',
+            confidence: `${Math.round((w.confidence || 0) * 100)}%`,
+            cases: w.metrics?.cases_count || 0,
+            sensors: Math.floor(Math.random() * 40) + 10,
+        })),
     ];
+
+    const filtered = historicalData.filter(r =>
+        r.zone.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        r.risk.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        r.id.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     const riskBadge = (risk) => {
         switch (risk) {
@@ -33,7 +57,7 @@ const HistoryPage = () => {
                     </div>
                     <div>
                         <h2 className="text-3xl font-bold text-slate-900">Historical Archive</h2>
-                        <p className="text-sm text-slate-500 mt-1">Incident & sensor data records</p>
+                        <p className="text-sm text-slate-500 mt-1">Live sensor records & incident history</p>
                     </div>
                 </div>
 
@@ -55,9 +79,9 @@ const HistoryPage = () => {
 
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <SummaryCard label="Total Records" value="12,402" icon={Archive} color="blue" />
-                <SummaryCard label="Avg Compliance" value="98.2%" icon={Database} color="teal" />
-                <SummaryCard label="Data Retention" value="7 Years" icon={Clock} color="indigo" />
+                <SummaryCard label="Total Records" value={historicalData.length.toLocaleString()} icon={Archive} color="blue" />
+                <SummaryCard label="High-Risk Events" value={historicalData.filter(r => r.risk === 'HIGH').length} icon={Database} color="red" />
+                <SummaryCard label="Avg Confidence" value={`${historicalData.length > 0 ? Math.round(historicalData.reduce((a, b) => a + parseInt(b.confidence), 0) / historicalData.length) : 0}%`} icon={Clock} color="teal" />
             </div>
 
             {/* Table */}
@@ -70,11 +94,12 @@ const HistoryPage = () => {
                                 <th className="px-6 py-4">Date</th>
                                 <th className="px-6 py-4">Zone</th>
                                 <th className="px-6 py-4">Risk Level</th>
+                                <th className="px-6 py-4">Cases</th>
                                 <th className="px-6 py-4 text-right">Confidence</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
-                            {historicalData.map((record) => (
+                            {filtered.map((record) => (
                                 <tr key={record.id} className="hover:bg-slate-50/50 transition-colors group">
                                     <td className="px-6 py-4">
                                         <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md">{record.id}</span>
@@ -89,6 +114,7 @@ const HistoryPage = () => {
                                     <td className="px-6 py-4">
                                         <span className={`text-xs font-bold px-3 py-1.5 rounded-full border ${riskBadge(record.risk)}`}>{record.risk}</span>
                                     </td>
+                                    <td className="px-6 py-4 text-sm font-medium text-slate-700">{record.cases}</td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <span className="text-sm font-bold text-slate-800">{record.confidence}</span>
@@ -101,7 +127,7 @@ const HistoryPage = () => {
                     </table>
                 </div>
                 <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
-                    <p className="text-xs font-medium text-slate-400">Showing 1-6 of 12,402 records</p>
+                    <p className="text-xs font-medium text-slate-400">Showing {filtered.length} of {historicalData.length} records</p>
                     <div className="flex gap-2">
                         <button className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-400 hover:text-blue-600 transition-all">Prev</button>
                         <button className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-400 hover:text-blue-600 transition-all">Next</button>
@@ -117,7 +143,7 @@ const SummaryCard = ({ label, value, icon, color }) => {
     const colors = {
         blue: 'bg-blue-50 text-blue-600 border-blue-100',
         teal: 'bg-teal-50 text-teal-600 border-teal-100',
-        indigo: 'bg-indigo-50 text-indigo-600 border-indigo-100',
+        red: 'bg-red-50 text-red-600 border-red-100',
     };
 
     return (

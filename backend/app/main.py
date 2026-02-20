@@ -15,7 +15,7 @@ logging.basicConfig(
 logger = logging.getLogger("aqua-sentinel")
 
 from app.utils.database import engine, Base
-from app.routes import predict, agent_api
+from app.routes import predict, agent_api, realtime
 from app.core.config import settings
 
 
@@ -47,6 +47,7 @@ app.add_middleware(
 # Register routes
 app.include_router(predict.router, prefix=settings.API_V1_STR)
 app.include_router(agent_api.router, prefix=settings.API_V1_STR)
+app.include_router(realtime.router, prefix=settings.API_V1_STR)
 
 
 @app.get("/", tags=["Health"])

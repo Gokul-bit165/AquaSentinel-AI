@@ -25,9 +25,11 @@ class DecisionAgent:
         
         Task:
         Provide 3-4 professional, actionable recommendations for local government and health officials.
-        Format your response as a JSON object with two keys: 
+        Format your response as a JSON object with four keys: 
         1. 'recommendations' (a list of strings)
         2. 'public_warning' (a concise string for a public alert)
+        3. 'brief_description' (a 2-3 sentence overview of why this level of action is being taken)
+        4. 'final_decision' (a single powerful sentence stating the ultimate command for the region)
         
         Keep it professional and high-impact.
         """
@@ -61,9 +63,13 @@ class DecisionAgent:
                     "Deploy rapid response medical teams to the affected ward.",
                     "Halt all non-crucial water distribution from suspect sources."
                 ],
-                "public_warning": "🚨 HIGH ALERT: Boil all drinking water. Contamination risk in progress."
+                "public_warning": "🚨 HIGH ALERT: Boil all drinking water. Contamination risk in progress.",
+                "brief_description": "Critical environmental indicators and surging case counts necessitate an immediate intervention to prevent a widespread outbreak.",
+                "final_decision": "IMMEDIATE DEPLOYMENT: Activate emergency containment protocol for the entire ward."
             }
         return {
             "recommendations": ["Routine monitoring recommended.", "Ensure water storage is covered."],
-            "public_warning": "Water quality is currently within safe limits."
+            "public_warning": "Water quality is currently within safe limits.",
+            "brief_description": "Current data suggests a low-risk environment with no immediate threat to public health.",
+            "final_decision": "MAINTAIN POSTURE: Continue routine surveillance and sensor calibration."
         }

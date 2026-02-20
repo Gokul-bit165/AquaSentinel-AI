@@ -1,6 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, field_validator
-from typing import List, Union, Any
+from typing import List, Union, Any, Optional
 import os
 import json
 
@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     # Ollama Settings
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     LLM_MODEL: str = "llama3:latest"
+
+    # Weather API
+    WEATHER_API_KEY: Optional[str] = None
 
     @property
     def abs_model_path(self) -> str:

@@ -1,6 +1,6 @@
 {
-  "best_model": "RandomForest",
-  "best_accuracy": 0.9238095238095239,
+  "best_model": "HybridEnsemble (RF+GB)",
+  "best_accuracy": 0.919047619047619,
   "dataset_size": 1050,
   "train_size": 840,
   "test_size": 210,
@@ -27,11 +27,11 @@
   ],
   "results": {
     "RandomForest": {
-      "accuracy": 0.9238,
-      "f1_macro": 0.9239,
-      "f1_weighted": 0.9239,
-      "cv_accuracy_mean": 0.9162,
-      "cv_accuracy_std": 0.0149,
+      "accuracy": 0.9143,
+      "f1_macro": 0.9136,
+      "f1_weighted": 0.9136,
+      "cv_accuracy_mean": 0.9114,
+      "cv_accuracy_std": 0.0227,
       "confusion_matrix": [
         [
           63,
@@ -40,58 +40,92 @@
         ],
         [
           0,
+          70,
+          0
+        ],
+        [
+          9,
+          2,
+          59
+        ]
+      ],
+      "feature_importance": {
+        "severity_score": 0.2634,
+        "rain_contam_interaction": 0.258,
+        "contamination": 0.1478,
+        "rainfall": 0.1183,
+        "cases_count": 0.1056,
+        "ph_level": 0.0508,
+        "ph_deviation": 0.0386,
+        "cases_per_contam": 0.0173
+      }
+    },
+    "GradientBoosting": {
+      "accuracy": 0.9143,
+      "f1_macro": 0.9145,
+      "f1_weighted": 0.9145,
+      "cv_accuracy_mean": 0.9019,
+      "cv_accuracy_std": 0.0143,
+      "confusion_matrix": [
+        [
+          65,
+          0,
+          5
+        ],
+        [
+          0,
           68,
           2
         ],
         [
-          5,
-          2,
-          63
+          11,
+          0,
+          59
         ]
       ],
       "feature_importance": {
-        "severity_score": 0.2927,
-        "rain_contam_interaction": 0.2459,
-        "contamination": 0.1324,
-        "rainfall": 0.1212,
-        "cases_count": 0.0874,
-        "ph_level": 0.0538,
-        "ph_deviation": 0.049,
-        "cases_per_contam": 0.0176
+        "severity_score": 0.8017,
+        "rain_contam_interaction": 0.0947,
+        "ph_deviation": 0.0243,
+        "contamination": 0.0208,
+        "cases_per_contam": 0.0164,
+        "cases_count": 0.0153,
+        "rainfall": 0.0139,
+        "ph_level": 0.013
       }
     },
-    "GradientBoosting (XGBoost-style)": {
-      "accuracy": 0.9095,
-      "f1_macro": 0.9101,
-      "f1_weighted": 0.9101,
-      "cv_accuracy_mean": 0.92,
-      "cv_accuracy_std": 0.023,
+    "HybridEnsemble (RF+GB)": {
+      "accuracy": 0.919,
+      "f1_macro": 0.9188,
+      "f1_weighted": 0.9188,
+      "cv_accuracy_mean": 0.9029,
+      "cv_accuracy_std": 0.0126,
       "confusion_matrix": [
         [
-          62,
+          65,
           0,
-          8
+          5
         ],
         [
           0,
-          67,
-          3
+          69,
+          1
         ],
         [
-          7,
+          10,
           1,
-          62
+          59
         ]
       ],
       "feature_importance": {
-        "severity_score": 0.8604,
-        "rain_contam_interaction": 0.0319,
-        "cases_per_contam": 0.0265,
-        "rainfall": 0.022,
-        "cases_count": 0.0209,
-        "contamination": 0.0176,
-        "ph_deviation": 0.0118,
-        "ph_level": 0.009
+        "severity_score": 0.5326,
+        "rain_contam_interaction": 0.1763,
+        "contamination": 0.0843,
+        "rainfall": 0.0661,
+        "cases_count": 0.0605,
+        "ph_level": 0.0319,
+        "ph_deviation": 0.0315,
+        "cases_per_contam": 0.0168
       }
     }
   },

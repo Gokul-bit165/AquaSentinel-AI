@@ -59,11 +59,13 @@ BOUNDARY_PROFILES = {
 }
 
 LOCATIONS = [
-    "Mumbai", "Delhi", "Chennai", "Kolkata", "Bangalore",
-    "Hyderabad", "Ahmedabad", "Pune", "Jaipur", "Lucknow",
-    "Patna", "Bhopal", "Surat", "Nagpur", "Varanasi",
-    "Kanpur", "Indore", "Vizag", "Coimbatore", "Kochi",
-    "Guwahati", "Ranchi", "Dehradun", "Shimla", "Thiruvananthapuram",
+    "RS Puram, Coimbatore", "Gandhipuram, Coimbatore", "Peelamedu, Coimbatore", 
+    "Saravanampatti, Coimbatore", "Singanallur, Coimbatore", "Vadavalli, Coimbatore", 
+    "Thudiyalur, Coimbatore", "Kurichi, Coimbatore", "Podanur, Coimbatore", 
+    "Kuniyamuthur, Coimbatore", "Ramanathapuram, Coimbatore", "Saibaba Colony, Coimbatore", 
+    "Race Course, Coimbatore", "Ganapathy, Coimbatore", "Koundampalayam, Coimbatore", 
+    "Periyanaickenpalayam, Coimbatore", "Sulur, Coimbatore", "Pollachi, Coimbatore", 
+    "Mettupalayam, Coimbatore", "Karamadai, Coimbatore", "Annur, Coimbatore"
 ]
 
 # How many rows per category

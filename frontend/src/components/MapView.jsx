@@ -1,140 +1,162 @@
-import { MapContainer, TileLayer, CircleMarker, Popup, ZoomControl } from 'react-leaflet';
-import { useEffect, useState } from 'react';
+import { MapContainer, TileLayer, Circle, CircleMarker, Popup, ZoomControl, useMap } from 'react-leaflet';
+import { useEffect } from 'react';
 
-// Focus on Coimbatore as per frontend team's update
 const COIMBATORE_CENTER = [11.0168, 76.9558];
-const DEFAULT_ZOOM = 11;
+const DEFAULT_ZOOM = 12;
 
-function generateLocations(predictions, simulation) {
-    const baseLat = 11.0168;
-    const baseLng = 76.9558;
-
-    const historical = predictions.map((p, i) => ({
-        ...p,
-        lat: baseLat + (Math.random() - 0.5) * 0.1,
-        lng: baseLng + (Math.random() - 0.5) * 0.1,
-        cityName: p.location !== 'Unknown' ? p.location : 'Coimbatore Ward',
-    }));
-
-    if (simulation) {
-        historical.unshift({
-            ...simulation,
-            lat: baseLat + 0.05, // Mock localized simulation point
-            lng: baseLng + 0.05,
-            cityName: simulation.location,
-            isSimulation: true
-        });
-    }
-
-    return historical;
-}
-
-const riskColors = {
-    high: '#ef4444',
-    medium: '#f59e0b',
-    low: '#22c55e',
+// Fixed coordinates for Coimbatore wards
+const WARD_COORDS = {
+    "RS Puram, Coimbatore": [11.0318, 76.9408],
+    "Gandhipuram, Coimbatore": [11.0268, 76.9658],
+    "Peelamedu, Coimbatore": [11.0268, 76.9958],
+    "Saravanampatti, Coimbatore": [11.0768, 76.9958],
+    "Singanallur, Coimbatore": [11.0068, 77.0058],
+    "Vadavalli, Coimbatore": [11.0268, 76.9058],
+    "Thudiyalur, Coimbatore": [11.0768, 76.9458],
+    "Kurichi, Coimbatore": [10.9468, 76.9658],
+    "Podanur, Coimbatore": [10.9668, 76.9858],
+    "Kuniyamuthur, Coimbatore": [10.9868, 76.9358],
+    "Ramanathapuram, Coimbatore": [11.0418, 76.9758],
+    "Saibaba Colony, Coimbatore": [11.0168, 76.9558],
+    "Race Course, Coimbatore": [11.0068, 76.9558],
+    "Ganapathy, Coimbatore": [11.0518, 76.9658],
+    "Koundampalayam, Coimbatore": [11.0568, 76.9358],
+    "Periyanaickenpalayam, Coimbatore": [11.0868, 76.9258],
+    "Sulur, Coimbatore": [11.0368, 77.0458],
+    "Pollachi, Coimbatore": [10.6618, 77.0108],
+    "Mettupalayam, Coimbatore": [11.2968, 76.9358],
+    "Karamadai, Coimbatore": [11.0968, 76.8758],
+    "Annur, Coimbatore": [11.2368, 77.1058],
 };
 
-export default function MapView({ predictions = [], simulation = null, mini = false }) {
-    const [locations, setLocations] = useState([]);
+const riskConfig = {
+    high: { fill: '#DC2626', stroke: '#991B1B', outerFill: 'rgba(220, 38, 38, 0.08)', pulse: true },
+    medium: { fill: '#D97706', stroke: '#92400E', outerFill: 'rgba(217, 119, 6, 0.06)', pulse: false },
+    low: { fill: '#16A34A', stroke: '#166534', outerFill: 'rgba(22, 163, 74, 0.05)', pulse: false },
+};
 
+function MapUpdater({ center, zoom }) {
+    const map = useMap();
     useEffect(() => {
-        setLocations(generateLocations(predictions, simulation));
-    }, [predictions, simulation]);
+        map.setView(center, zoom);
+    }, [center, zoom, map]);
+    return null;
+}
+
+export default function MapView({ territoryPulse = [], onLocationClick, mini = false }) {
+    const locations = territoryPulse.map(p => {
+        const coords = WARD_COORDS[p.ward_name];
+        if (!coords) return null;
+        return { ...p, lat: coords[0], lng: coords[1] };
+    }).filter(Boolean);
 
     return (
-        <div className={`${mini ? '' : 'glass-card p-6 border-white/5 relative overflow-hidden'}`}>
-            {!mini && (
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                        <span className="text-xl">🗺️</span> Spatio-Temporal Heatmap
-                    </h3>
-                    {simulation && (
-                        <span className="px-2 py-1 bg-purple-500/20 text-purple-300 text-[10px] font-bold rounded animate-pulse border border-purple-500/30">
-                            SIMULATION ACTIVE
-                        </span>
-                    )}
-                </div>
-            )}
-
-            <div
-                className={`rounded-xl overflow-hidden border ${mini ? 'border-slate-200 bg-slate-50' : 'border-white/10'}`}
-                style={{ height: mini ? '100%' : '400px' }}
+        <div className={`h-full w-full ${mini ? '' : 'glass-card p-5'}`}>
+            <MapContainer
+                center={COIMBATORE_CENTER}
+                zoom={DEFAULT_ZOOM}
+                className="h-full w-full rounded-xl"
+                style={{ minHeight: mini ? '460px' : '500px', background: '#f8fafc' }}
+                zoomControl={false}
+                scrollWheelZoom={true}
             >
-                <MapContainer
-                    center={COIMBATORE_CENTER}
-                    zoom={mini ? 10 : DEFAULT_ZOOM}
-                    style={{ height: '100%', width: '100%', filter: mini ? '' : 'hue-rotate(-10deg) saturate(1.2)' }}
-                    scrollWheelZoom={!mini}
-                    zoomControl={false}
-                    dragging={!mini}
-                >
-                    <TileLayer
-                        attribution='&copy; CARTO'
-                        url={mini ? "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" : "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"}
-                    />
+                <MapUpdater center={COIMBATORE_CENTER} zoom={DEFAULT_ZOOM} />
+                <ZoomControl position="bottomright" />
 
-                    {!mini && <ZoomControl position="bottomright" />}
+                <TileLayer
+                    url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+                    attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+                />
 
-                    {locations.map((loc, i) => (
-                        <CircleMarker
-                            key={`${i}-${loc.isSimulation}`}
-                            center={[loc.lat, loc.lng]}
-                            radius={mini ? 6 : (loc.risk_level === 'high' ? 18 : loc.risk_level === 'medium' ? 12 : 8)}
-                            pathOptions={{
-                                color: loc.isSimulation ? '#a855f7' : riskColors[loc.risk_level] || riskColors.low,
-                                fillColor: loc.isSimulation ? '#a855f7' : riskColors[loc.risk_level] || riskColors.low,
-                                fillOpacity: loc.isSimulation ? 0.8 : 0.5,
-                                weight: loc.isSimulation ? 4 : 2,
-                                dashArray: loc.isSimulation ? '5, 5' : null,
-                                className: !mini && loc.risk_level === 'high' ? 'animate-pulse-glow' : ''
-                            }}
-                        >
-                            <Popup>
-                                <div className="text-slate-800 min-w-[200px] p-1 font-sans">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <strong className="text-sm">📍 {loc.cityName}</strong>
-                                        {loc.isSimulation && <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 rounded-full font-bold">DIGITAL TWIN</span>}
+                {locations.map((loc, i) => {
+                    const config = riskConfig[loc.risk_level] || riskConfig.low;
+                    const zoneRadius = loc.risk_level === 'high' ? 1200 : loc.risk_level === 'medium' ? 900 : 700;
+
+                    return (
+                        <span key={i}>
+                            {/* Outer hazard zone — large semi-transparent territory */}
+                            <Circle
+                                center={[loc.lat, loc.lng]}
+                                radius={zoneRadius}
+                                pathOptions={{
+                                    fillColor: config.fill,
+                                    fillOpacity: 0.12,
+                                    color: config.fill,
+                                    weight: 1,
+                                    opacity: 0.3,
+                                    dashArray: loc.risk_level === 'high' ? '' : '6 4',
+                                }}
+                            />
+
+                            {/* Middle ring — visible border */}
+                            <Circle
+                                center={[loc.lat, loc.lng]}
+                                radius={zoneRadius * 0.6}
+                                pathOptions={{
+                                    fillColor: config.fill,
+                                    fillOpacity: 0.2,
+                                    color: config.stroke,
+                                    weight: 1.5,
+                                    opacity: 0.5,
+                                }}
+                            />
+
+                            {/* Core marker — solid center dot */}
+                            <CircleMarker
+                                center={[loc.lat, loc.lng]}
+                                radius={mini ? 7 : 9}
+                                pathOptions={{
+                                    fillColor: config.fill,
+                                    fillOpacity: 0.9,
+                                    color: '#fff',
+                                    weight: 2.5,
+                                }}
+                                eventHandlers={{
+                                    click: () => onLocationClick && onLocationClick(loc),
+                                }}
+                            >
+                                <Popup>
+                                    <div style={{ minWidth: '180px', fontFamily: 'Inter, sans-serif' }}>
+                                        <p style={{ fontWeight: 800, fontSize: '13px', marginBottom: '4px', color: '#1E293B' }}>
+                                            {loc.ward_name?.replace(', Coimbatore', '')}
+                                        </p>
+                                        <p style={{
+                                            fontSize: '11px', fontWeight: 700, textTransform: 'uppercase',
+                                            color: config.fill, marginBottom: '8px', letterSpacing: '0.05em'
+                                        }}>
+                                            {loc.risk_level} RISK · {Math.round(loc.confidence * 100)}%
+                                        </p>
+                                        <div style={{ fontSize: '11px', color: '#64748B', lineHeight: '1.6' }}>
+                                            <div>🌧 Rainfall: {loc.metrics?.rainfall}mm</div>
+                                            <div>💧 Contamination: {Math.round((loc.metrics?.contamination || 0) * 100)}%</div>
+                                            <div>⚗️ pH: {loc.metrics?.ph_level}</div>
+                                            <div>🏥 Cases: {loc.metrics?.cases_count}</div>
+                                        </div>
+                                        <p style={{ fontSize: '10px', marginTop: '8px', color: '#94A3B8', fontStyle: 'italic' }}>
+                                            Click for AI analysis →
+                                        </p>
                                     </div>
-                                    <div className="space-y-1 text-xs">
-                                        <div className="flex justify-between">
-                                            <span>Risk Level:</span>
-                                            <span className="font-bold flex items-center gap-1" style={{ color: riskColors[loc.risk_level] }}>
-                                                {loc.risk_level?.toUpperCase()}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between text-slate-500">
-                                            <span>Rainfall:</span>
-                                            <span className="font-mono">{loc.rainfall?.toFixed(1)}mm</span>
-                                        </div>
-                                        {loc.contamination && (
-                                            <div className="flex justify-between text-slate-500">
-                                                <span>Contamination:</span>
-                                                <span className="font-mono">{loc.contamination?.toFixed(2)}</span>
-                                            </div>
-                                        )}
-                                        <div className="mt-2 pt-1 border-t border-slate-200 text-[10px] text-slate-500 italic">
-                                            {loc.isSimulation ? "Projected scenario based on current simulation parameters." : "Historical monitored data."}
-                                        </div>
-                                    </div>
-                                </div>
-                            </Popup>
-                        </CircleMarker>
-                    ))}
-                </MapContainer>
-            </div>
+                                </Popup>
+                            </CircleMarker>
+                        </span>
+                    );
+                })}
+            </MapContainer>
 
+            {/* Legend overlay */}
             {!mini && (
-                <div className="flex items-center gap-6 mt-4 justify-center">
-                    {Object.entries(riskColors).map(([level, color]) => (
-                        <div key={level} className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
-                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}` }} />
-                            {level}
+                <div className="absolute bottom-8 left-8 z-[1000] bg-white/95 backdrop-blur-sm p-4 rounded-xl border border-slate-200 shadow-lg">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Risk Zones</p>
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-2.5 text-xs text-slate-600">
+                            <div className="w-4 h-4 rounded-full bg-red-500 shadow-sm shadow-red-500/40" /> High Risk Zone
                         </div>
-                    ))}
-                    <div className="flex items-center gap-2 text-[10px] font-bold text-purple-400 uppercase tracking-tighter">
-                        <div className="w-2.5 h-2.5 rounded-full bg-purple-500 border-2 border-white/50" />
-                        Simulation
+                        <div className="flex items-center gap-2.5 text-xs text-slate-600">
+                            <div className="w-4 h-4 rounded-full bg-amber-500 shadow-sm shadow-amber-500/40" /> Medium Risk
+                        </div>
+                        <div className="flex items-center gap-2.5 text-xs text-slate-600">
+                            <div className="w-4 h-4 rounded-full bg-green-500 shadow-sm shadow-green-500/40" /> Safe Zone
+                        </div>
                     </div>
                 </div>
             )}
