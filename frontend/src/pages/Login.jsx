@@ -20,8 +20,21 @@ const Login = () => {
             .catch(() => setModelAccuracy(0.94));
     }, []);
 
+    const [error, setError] = useState('');
+
     const handleLogin = (e) => {
         e.preventDefault();
+        setError('');
+        if (!email.trim() || !password.trim()) {
+            setError('Please fill in all fields');
+            return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            setError('Please enter a valid email address');
+            return;
+        }
+        localStorage.setItem('aquasentinel_role', role);
+        localStorage.setItem('aquasentinel_user', email);
         navigate(role === 'admin' ? '/admin' : '/dashboard');
     };
 

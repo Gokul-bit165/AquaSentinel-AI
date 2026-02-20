@@ -5,10 +5,11 @@ import {
     Filter, Layers, Maximize2
 } from 'lucide-react';
 import MapView from '../components/MapView';
-import { getPredictions, getAlerts, getStats, resolveAlert } from '../services/api';
+import { getPredictions, getAlerts, getStats, resolveAlert, getTerritoryPulse } from '../services/api';
 
 const AdminDashboard = () => {
     const [predictions, setPredictions] = useState([]);
+    const [territoryPulse, setTerritoryPulse] = useState([]);
     const [alerts, setAlerts] = useState([]);
     const [stats, setStats] = useState({ total: 0, highRisk: 0, activeAlerts: 0, avgConfidence: 0 });
     const [isLoading, setIsLoading] = useState(true);
@@ -16,7 +17,8 @@ const AdminDashboard = () => {
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const [p, a, s] = await Promise.all([getPredictions(), getAlerts(), getStats()]);
+            const [p, a, s, tp] = await Promise.all([getPredictions(), getAlerts(), getStats(), getTerritoryPulse().catch(() => ({ data: [] }))]);
+            setTerritoryPulse(tp.data || []);
             setPredictions(p.data);
             setAlerts(a.data);
             const raw = s.data;
@@ -102,7 +104,7 @@ const AdminDashboard = () => {
                     </div>
                     <div className="flex-1 relative bg-slate-50 p-2">
                         <div className="w-full h-full rounded-xl overflow-hidden border border-slate-200">
-                            <MapView predictions={predictions} mini={true} />
+                            <MapView territoryPulse={territoryPulse} mini={true} />
                         </div>
                         <div className="absolute bottom-6 left-6 z-[40] bg-white/95 backdrop-blur p-4 rounded-xl border border-slate-200 shadow-lg flex items-center gap-6">
                             <div className="flex items-center gap-2 text-xs font-medium text-slate-600"><div className="w-3 h-3 rounded-full bg-red-500" /> High Risk</div>

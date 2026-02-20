@@ -10,6 +10,8 @@ const Layout = ({ children, role = 'user' }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const location = useLocation();
     const navigate = useNavigate();
+    const storedUser = localStorage.getItem('aquasentinel_user') || '';
+    const displayName = storedUser ? storedUser.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : (role === 'admin' ? 'Admin Commander' : 'Operator');
 
     const userNavigation = [
         { name: 'Safety Hub', path: '/dashboard', icon: LayoutDashboard },
@@ -125,7 +127,7 @@ const Layout = ({ children, role = 'user' }) => {
                         <div className="flex items-center gap-3.5">
                             <div className="text-right hidden xl:block">
                                 <p className="text-sm font-semibold text-slate-800 leading-none">
-                                    {role === 'admin' ? 'Admin Commander' : 'Cmdr. Sarah Chen'}
+                                    {displayName}
                                 </p>
                                 <p className="text-xs text-slate-400 mt-1">
                                     {role === 'admin' ? 'Operational Lead' : 'Health Officer'}
@@ -148,3 +150,4 @@ const Layout = ({ children, role = 'user' }) => {
 };
 
 export default Layout;
+

@@ -1,4 +1,5 @@
 import random
+import hashlib
 import logging
 
 logger = logging.getLogger("aqua-sentinel")
@@ -28,11 +29,13 @@ class MedicalService:
     def get_ward_records(self, ward_name: str) -> dict:
         """Fetch medical records/case counts for a specific territory."""
         if ward_name not in self._cache:
-            # Seed the cache with semi-realistic data for the demo
-            # Some wards are "historic hot-spots"
-            base_cases = random.randint(5, 25)
+            # Seed based on ward name for deterministic results
+            seed = int(hashlib.md5(ward_name.encode()).hexdigest(), 16) % (2**32)
+            rng = random.Random(seed)
+            
+            base_cases = rng.randint(5, 25)
             if any(hotspot in ward_name for hotspot in ["Gandhipuram", "Singanallur", "Podanur"]):
-                base_cases += random.randint(20, 40)
+                base_cases += rng.randint(20, 40)
             
             self._cache[ward_name] = {
                 "historical_cases": base_cases,

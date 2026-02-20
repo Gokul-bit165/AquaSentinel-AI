@@ -1,5 +1,7 @@
 import random
 import logging
+import hashlib
+from datetime import datetime
 from app.services.weather_service import weather_service
 from app.services.medical_service import medical_service
 from app.ml.predictor import predict
@@ -16,6 +18,12 @@ class PulseService:
 
     def __init__(self):
         self.last_pulse = []
+
+    def _get_ward_random(self, ward_name: str):
+        """Returns a seeded Random instance stable for the current hour."""
+        hour_key = datetime.now().strftime("%Y-%m-%d-%H")
+        seed = int(hashlib.md5(f"{ward_name}:{hour_key}".encode()).hexdigest(), 16) % (2**32)
+        return random.Random(seed)
 
     async def get_territory_pulse(self) -> list:
         """
@@ -37,13 +45,14 @@ class PulseService:
 
         for ward in territories:
             try:
+                rng = self._get_ward_random(ward)
                 # Get automated medical records
                 med_data = medical_service.get_ward_records(ward)
                 cases = med_data.get("historical_cases", 0)
 
-                # Simulate water quality (sensor data per ward)
-                ph_level = 7.0 + random.uniform(-0.5, 0.5)
-                contamination = 0.1 + random.uniform(0, 0.3)
+                # Simulate water quality (sensor data per ward — stable per hour)
+                ph_level = 7.0 + rng.uniform(-0.5, 0.5)
+                contamination = 0.1 + rng.uniform(0, 0.3)
                 if "Singanallur" in ward or "Podanur" in ward:
                     contamination += 0.2
                 if "Gandhipuram" in ward:

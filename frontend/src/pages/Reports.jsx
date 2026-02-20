@@ -1,15 +1,54 @@
+import { useState, useEffect, useCallback } from 'react';
 import {
     FileText, Download, ExternalLink, CheckCircle2, AlertTriangle,
-    BarChart3, PieChart, Search, Filter, ChevronRight
+    BarChart3, PieChart, Search, Filter, ChevronRight, RefreshCw
 } from 'lucide-react';
+import { getStats, getPredictions, getAlerts } from '../services/api';
 
 const ReportsPage = () => {
-    const recentReports = [
-        { id: 'REP-2023-011', name: 'Zone A-12 Monthly Summary', type: 'Clinical', status: 'Finalized', date: 'Oct 2023', author: 'AI Commander' },
-        { id: 'REP-2023-010', name: 'Regional Basin Water Quality', type: 'Environmental', status: 'Processing', date: 'Sep 2023', author: 'System Bot-X' },
-        { id: 'REP-2023-009', name: 'Outbreak Prevention Audit', type: 'Compliance', status: 'Needs Review', date: 'Aug 2023', author: 'Global Admin' },
-        { id: 'REP-2023-008', name: 'Infrastructure Resilience Test', type: 'Operational', status: 'Finalized', date: 'Jul 2023', author: 'Eng. Services' },
-    ];
+    const [stats, setStats] = useState(null);
+    const [predictions, setPredictions] = useState([]);
+    const [alerts, setAlerts] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const fetchData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const [s, p, a] = await Promise.all([
+                getStats().catch(() => ({ data: null })),
+                getPredictions().catch(() => ({ data: [] })),
+                getAlerts().catch(() => ({ data: [] })),
+            ]);
+            setStats(s.data);
+            setPredictions(p.data || []);
+            setAlerts(a.data || []);
+        } catch (err) { console.error(err); }
+        finally { setIsLoading(false); }
+    }, []);
+
+    useEffect(() => { fetchData(); }, [fetchData]);
+
+    const totalPredictions = stats?.total_predictions || predictions.length;
+    const highRisk = stats?.risk_distribution?.high || predictions.filter(p => p.risk_level === 'high').length;
+    const activeAlerts = stats?.active_alerts || alerts.length;
+    const avgConfidence = stats?.avg_confidence ? `${Math.round(stats.avg_confidence * 100)}%` : `${predictions.length > 0 ? Math.round(predictions.reduce((a, p) => a + (p.confidence || 0), 0) / predictions.length * 100) : 0}%`;
+
+    // Generate report entries dynamically from predictions
+    const recentReports = predictions.slice(0, 6).map((p, i) => ({
+        id: `REP-${String(p.id || (2024000 + i)).padStart(7, '0')}`,
+        name: `${p.location || 'Zone'} Risk Assessment`,
+        type: p.risk_level === 'high' ? 'Clinical' : p.risk_level === 'medium' ? 'Environmental' : 'Compliance',
+        status: p.severity === 'CRITICAL' ? 'Needs Review' : p.risk_level === 'high' ? 'Processing' : 'Finalized',
+        date: p.created_at ? new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Recent',
+        author: 'AI Commander',
+    }));
+
+    // Add fallback reports if no predictions exist
+    if (recentReports.length === 0) {
+        recentReports.push(
+            { id: 'REP-0000001', name: 'System Initialization Report', type: 'Operational', status: 'Finalized', date: 'Current', author: 'System' },
+        );
+    }
 
     const statusBadge = (s) => {
         switch (s) {
@@ -17,6 +56,20 @@ const ReportsPage = () => {
             case 'Processing': return 'bg-blue-50 text-blue-600 border-blue-100';
             default: return 'bg-amber-50 text-amber-600 border-amber-100';
         }
+    };
+
+    const handleExport = () => {
+        const headers = ['Report ID', 'Name', 'Type', 'Status', 'Date', 'Author'];
+        const csvRows = [headers.join(','), ...recentReports.map(r =>
+            [r.id, `"${r.name}"`, r.type, r.status, r.date, r.author].join(',')
+        )];
+        const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `aquasentinel_reports_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
     };
 
     return (
@@ -32,17 +85,22 @@ const ReportsPage = () => {
                         <p className="text-sm text-slate-500 mt-1">Analytics & compliance logs</p>
                     </div>
                 </div>
-                <button className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all">
-                    Generate New Report
-                </button>
+                <div className="flex items-center gap-3">
+                    <button onClick={fetchData} className="p-2.5 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600 transition-all">
+                        <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
+                    </button>
+                    <button onClick={handleExport} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all">
+                        <Download size={16} /> Export Reports
+                    </button>
+                </div>
             </div>
 
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                <ReportStat label="Avg Confidence" value="94.2%" icon={CheckCircle2} color="emerald" />
-                <ReportStat label="Incidents Logged" value="1,240" icon={BarChart3} color="blue" />
-                <ReportStat label="Critical Alerts" value="12" icon={AlertTriangle} color="amber" />
-                <ReportStat label="Total Volume" value="4.2 GB" icon={PieChart} color="indigo" />
+                <ReportStat label="Avg Confidence" value={avgConfidence} icon={CheckCircle2} color="emerald" />
+                <ReportStat label="Total Predictions" value={totalPredictions.toLocaleString()} icon={BarChart3} color="blue" />
+                <ReportStat label="Critical Alerts" value={activeAlerts} icon={AlertTriangle} color="amber" />
+                <ReportStat label="High Risk Events" value={highRisk} icon={PieChart} color="indigo" />
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -90,12 +148,12 @@ const ReportsPage = () => {
                 <div className="space-y-6">
                     <div className="glass-card p-6 bg-slate-900 text-white border-none relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-28 h-28 bg-blue-600/20 blur-3xl -mr-14 -mt-14 rounded-full" />
-                        <h3 className="text-base font-semibold mb-4 relative z-10">Scheduled Audits</h3>
-                        <p className="text-xs text-slate-400 mb-6 relative z-10">Auto system-wide analysis every 24h.</p>
+                        <h3 className="text-base font-semibold mb-4 relative z-10">System Summary</h3>
                         <div className="space-y-3 relative z-10">
-                            <AuditItem date="Nov 24" task="Regional Compliance" status="READY" />
-                            <AuditItem date="Nov 25" task="Infrastructure Stress" status="QUEUED" />
-                            <AuditItem date="Nov 26" task="Model Performance" status="QUEUED" />
+                            <SummaryItem label="Predictions" value={totalPredictions} />
+                            <SummaryItem label="High Risk" value={`${highRisk} zones`} />
+                            <SummaryItem label="Active Alerts" value={activeAlerts} />
+                            <SummaryItem label="Model" value="RF v2.1" />
                         </div>
                     </div>
 
@@ -137,15 +195,10 @@ const ReportStat = ({ label, value, icon, color }) => {
     );
 };
 
-const AuditItem = ({ date, task, status }) => (
-    <div className="flex items-center justify-between p-3.5 bg-white/5 rounded-xl border border-white/5 hover:border-white/10 transition-all">
-        <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-blue-400 bg-white/5 px-2.5 py-1 rounded-lg">{date}</span>
-            <span className="text-xs font-medium text-slate-200">{task}</span>
-        </div>
-        <span className={`text-xs font-bold px-2.5 py-1 rounded ${status === 'READY' ? 'bg-blue-500/20 text-blue-400' : 'bg-white/5 text-slate-500'}`}>
-            {status}
-        </span>
+const SummaryItem = ({ label, value }) => (
+    <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
+        <span className="text-xs font-medium text-slate-400">{label}</span>
+        <span className="text-xs font-bold text-white">{value}</span>
     </div>
 );
 
