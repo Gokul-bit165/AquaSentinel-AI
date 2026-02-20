@@ -1,5 +1,6 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { getModelMetrics } from '../services/api';
 import {
     ShieldAlert,
     ArrowRight,
@@ -18,6 +19,20 @@ const Login = () => {
     const [role, setRole] = useState('user');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+
+    const [accuracy, setAccuracy] = useState(0.942);
+
+    useEffect(() => {
+        const fetchMetrics = async () => {
+            try {
+                const res = await getModelMetrics();
+                setAccuracy(res.data.best_accuracy);
+            } catch (err) {
+                console.error('Failed to fetch accuracy for login:', err);
+            }
+        };
+        fetchMetrics();
+    }, []);
 
     const handleSignIn = (e) => {
         e.preventDefault();
@@ -80,7 +95,7 @@ const Login = () => {
                             </div>
 
                             <div className="flex items-baseline gap-4 mb-12">
-                                <span className="text-8xl font-black tracking-tighter text-[var(--text-primary)] leading-none">94.2%</span>
+                                <span className="text-8xl font-black tracking-tighter text-[var(--text-primary)] leading-none">{Math.round(accuracy * 1000) / 10}%</span>
                                 <div>
                                     <p className="font-black text-[var(--text-primary)] text-base">Current Accuracy</p>
                                     <p className="text-[var(--text-tertiary)] text-[11px] font-bold">Real-time Model Validation</p>

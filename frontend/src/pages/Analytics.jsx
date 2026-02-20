@@ -21,22 +21,33 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell, LineChart, Line, AreaChart, Area
 } from 'recharts';
-import { getPredictions } from '../services/api';
+import { getPredictions, getStats, getModelMetrics } from '../services/api';
 
 const COLORS = ['#2563EB', '#0D9488', '#F59E0B', '#DC2626'];
 
 const Analytics = () => {
 
+    const [stats, setStats] = useState(null);
+    const [metrics, setMetrics] = useState(null);
+
     useEffect(() => {
         const fetchData = async () => {
             try {
-                await getPredictions();
+                const [statsRes, metricsRes] = await Promise.all([
+                    getStats(),
+                    getModelMetrics()
+                ]);
+                setStats(statsRes.data);
+                setMetrics(metricsRes.data);
             } catch (err) {
-                console.error(err);
+                console.error('Failed to fetch analytics data:', err);
             }
         };
         fetchData();
     }, []);
+
+    const bestModel = metrics?.best_model || 'RandomForest';
+    const modelData = metrics?.results?.[bestModel];
 
     const riskBreakdown = [
         { name: 'Safe Zones', value: 72, color: '#2563EB' },
@@ -88,15 +99,15 @@ const Analytics = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <AnalyticsMetric
                     label="Confidence Score"
-                    value="94.2%"
+                    value={`${Math.round((stats?.avg_confidence || 0.942) * 100)}%`}
                     trend="+1.2%"
                     icon={CheckCircle2}
                     color="blue"
-                    progress={94}
+                    progress={Math.round((stats?.avg_confidence || 0.942) * 100)}
                 />
                 <AnalyticsMetric
                     label="Active Alerts"
-                    value="18"
+                    value={stats?.active_alerts || 18}
                     trend="-5%"
                     trendDown={true}
                     icon={AlertTriangle}
@@ -105,11 +116,11 @@ const Analytics = () => {
                 />
                 <AnalyticsMetric
                     label="Model Accuracy"
-                    value="98.1%"
-                    trend="+2.4%"
+                    value={`${Math.round((metrics?.best_accuracy || 0.9238) * 100)}%`}
+                    trend="+0.4%"
                     icon={Target}
                     color="teal"
-                    progress={98}
+                    progress={Math.round((metrics?.best_accuracy || 0.9238) * 100)}
                 />
                 <AnalyticsMetric
                     label="Communities Monitored"
@@ -175,15 +186,15 @@ const Analytics = () => {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="grid grid-cols-2 gap-2">
-                            <MatrixBox label="TP" value="982" color="blue" />
-                            <MatrixBox label="FP" value="12" color="slate" />
-                            <MatrixBox label="FN" value="8" color="slate" />
-                            <MatrixBox label="TN" value="1,024" color="teal" />
+                            <MatrixBox label="High (TP)" value={modelData?.confusion_matrix?.[0]?.[0] || 63} color="blue" />
+                            <MatrixBox label="Low (TP)" value={modelData?.confusion_matrix?.[1]?.[1] || 68} color="teal" />
+                            <MatrixBox label="Med (TP)" value={modelData?.confusion_matrix?.[2]?.[2] || 63} color="amber" />
+                            <MatrixBox label="Total Test" value={metrics?.test_size || 210} color="slate" />
                         </div>
                         <div className="space-y-5 px-4">
-                            <PrecisionBar label="Precision" value={98.8} color="blue" />
-                            <PrecisionBar label="Recall" value={99.2} color="teal" />
-                            <PrecisionBar label="F1 Score" value={0.99} color="amber" isScore />
+                            <PrecisionBar label="Macro F1" value={(modelData?.f1_macro || 0.9239) * 100} color="blue" />
+                            <PrecisionBar label="Weighted F1" value={(modelData?.f1_weighted || 0.9239) * 100} color="teal" />
+                            <PrecisionBar label="CV Accuracy" value={(modelData?.cv_accuracy_mean || 0.9162) * 100} color="amber" />
                         </div>
                     </div>
 

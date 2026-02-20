@@ -15,7 +15,7 @@ import {
     ArrowRight,
     Monitor
 } from 'lucide-react';
-import { submitPrediction, getPredictions, getAlerts } from '../services/api';
+import { submitPrediction, getPredictions, getAlerts, getStats } from '../services/api';
 import StatsCards from './StatsCards';
 import MapView from './MapView';
 import AlertPanel from './AlertPanel';
@@ -26,6 +26,12 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(false);
     const [currentStep, setCurrentStep] = useState(1);
     const [submitStatus, setSubmitStatus] = useState(null);
+    const [stats, setStats] = useState({
+        total: 0,
+        highRisk: 0,
+        activeAlerts: 0,
+        avgConfidence: 0
+    });
 
     const [form, setForm] = useState({
         rainfall: 45,
@@ -37,12 +43,14 @@ export default function Dashboard() {
 
     const fetchData = useCallback(async () => {
         try {
-            const [predRes, alertRes] = await Promise.all([
+            const [predRes, alertRes, statsRes] = await Promise.all([
                 getPredictions(),
                 getAlerts(),
+                getStats(),
             ]);
             setPredictions(predRes.data);
             setAlerts(alertRes.data);
+            setStats(statsRes.data);
         } catch (err) {
             console.error('Failed to fetch data:', err);
         }
@@ -115,12 +123,7 @@ export default function Dashboard() {
             </div>
 
             {/* Top Stats Cards (Using refined StatsCards component) */}
-            <StatsCards stats={{
-                total: predictions.length + 1200000,
-                highRisk: predictions.filter(p => p.risk_level === 'high').length + 42,
-                activeAlerts: alerts.length,
-                avgConfidence: 0.984
-            }} />
+            <StatsCards stats={stats} />
 
             {/* Main Interactive Row */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">

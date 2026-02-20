@@ -19,24 +19,45 @@ import {
     Monitor
 } from 'lucide-react';
 import MapView from '../components/MapView';
-import { getPredictions, getAlerts } from '../services/api';
+import { getPredictions, getAlerts, getStats, resolveAlert } from '../services/api';
 
 const AdminDashboard = () => {
     const [predictions, setPredictions] = useState([]);
     const [alerts, setAlerts] = useState([]);
+    const [stats, setStats] = useState({
+        total: 0,
+        highRisk: 0,
+        activeAlerts: 0,
+        avgConfidence: 0
+    });
+
+    const fetchData = async () => {
+        try {
+            const [p, a, s] = await Promise.all([
+                getPredictions(),
+                getAlerts(),
+                getStats()
+            ]);
+            setPredictions(p.data);
+            setAlerts(a.data);
+            setStats(s.data);
+        } catch (err) {
+            console.error(err);
+        }
+    };
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [p, a] = await Promise.all([getPredictions(), getAlerts()]);
-                setPredictions(p.data);
-                setAlerts(a.data);
-            } catch (err) {
-                console.error(err);
-            }
-        };
         fetchData();
     }, []);
+
+    const handleResolve = async (id) => {
+        try {
+            await resolveAlert(id);
+            fetchData();
+        } catch (err) {
+            console.error('Failed to resolve alert:', err);
+        }
+    };
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
@@ -44,37 +65,37 @@ const AdminDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <MetricCard
                     label="Total Predictions"
-                    value="1.2M+"
+                    value={stats.total.toLocaleString()}
                     trend="+12.4%"
                     trendType="up"
-                    footer="vs last month"
+                    footer="Live Sensor Data"
                     icon={Activity}
                     color="blue"
                 />
                 <MetricCard
-                    label="Anomalies Detected"
-                    value="42"
-                    trend="+5.2%"
-                    trendType="up"
-                    footer="Today"
+                    label="Active Anomalies"
+                    value={stats.activeAlerts}
+                    trend={stats.highRisk > 0 ? `+${stats.highRisk}` : 'Stable'}
+                    trendType={stats.highRisk > 0 ? "up" : "neutral"}
+                    footer="Alert Center"
                     icon={AlertCircle}
                     color="amber"
                 />
                 <MetricCard
-                    label="High-Risk Zones"
-                    value="12"
-                    trend="-2 active"
-                    trendType="down"
-                    footer="since 08:00"
+                    label="High-Risk Alerts"
+                    value={stats.highRisk}
+                    trend={stats.highRisk > 5 ? 'Critical' : 'Managed'}
+                    trendType={stats.highRisk > 5 ? "up" : "down"}
+                    footer="Regional Status"
                     icon={ShieldAlert}
                     color="red"
                 />
                 <MetricCard
                     label="Avg Confidence"
-                    value="98.4%"
-                    trend="Stable"
+                    value={`${Math.round(stats.avgConfidence * 100)}%`}
+                    trend="v2.4 Logic"
                     trendType="neutral"
-                    footer="9 sensors reporting"
+                    footer="AI Model Output"
                     icon={ShieldCheck}
                     color="teal"
                 />
@@ -149,11 +170,13 @@ const AdminDashboard = () => {
                             ) : (
                                 alerts.map((alert, index) => (
                                     <AdminAlertItem
-                                        key={index}
+                                        key={alert.id || index}
+                                        id={alert.id}
                                         severity={alert.severity?.toLowerCase() || 'info'}
                                         title={alert.message}
                                         description={alert.location || 'Coimbatore Region'}
                                         time={alert.timestamp || 'Just now'}
+                                        onResolve={handleResolve}
                                     />
                                 ))
                             )}
@@ -198,7 +221,7 @@ const MetricCard = ({ label, value, trend, trendType, footer, icon, color }) => 
     );
 };
 
-const AdminAlertItem = ({ severity, title, description, time, actionLabel, resolver }) => {
+const AdminAlertItem = ({ id, severity, title, description, time, actionLabel, resolver, onResolve }) => {
     const styles = {
         critical: 'border-red-500 bg-red-50/10 shadow-[0_0_15px_rgba(239,68,68,0.05)]',
         warning: 'border-amber-500 bg-amber-50/10 shadow-[0_0_15px_rgba(245,158,11,0.05)]',
@@ -229,7 +252,12 @@ const AdminAlertItem = ({ severity, title, description, time, actionLabel, resol
 
             {severity === 'critical' && (
                 <div className="grid grid-cols-2 gap-3 mt-4">
-                    <button className="bg-blue-600 text-white text-[10px] font-black uppercase tracking-[0.1em] py-3 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95">Resolve</button>
+                    <button
+                        onClick={() => onResolve && onResolve(id)}
+                        className="bg-blue-600 text-white text-[10px] font-black uppercase tracking-[0.1em] py-3 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+                    >
+                        Resolve
+                    </button>
                     <button className="bg-slate-800 text-white text-[10px] font-black uppercase tracking-[0.1em] py-3 rounded-xl hover:bg-slate-900 transition-all shadow-lg active:scale-95">Reassign</button>
                 </div>
             )}

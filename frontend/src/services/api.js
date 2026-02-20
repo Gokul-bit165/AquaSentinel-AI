@@ -16,10 +16,22 @@ const api = axios.create({
  */
 export const submitPrediction = (data) => api.post('/predict', data);
 
+/** Submit multiple predictions at once. */
+export const submitBatchPredictions = (data) => api.post('/predict/batch', data);
+
 /** Fetch all past predictions. */
 export const getPredictions = () => api.get('/predictions');
 
 /** Fetch all active alerts. */
 export const getAlerts = () => api.get('/alerts');
+
+/** Resolve an alert. */
+export const resolveAlert = (id) => api.patch(`/alerts/${id}/resolve`);
+
+/** Fetch summary stats for the dashboard. */
+export const getStats = () => api.get('/stats');
+
+/** Fetch ML model metrics. */
+export const getModelMetrics = () => api.get('/model/metrics');
 
 export default api;
