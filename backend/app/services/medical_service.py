@@ -12,7 +12,8 @@ WARD_NAMES = [
     "Kuniyamuthur, Coimbatore", "Ramanathapuram, Coimbatore", "Saibaba Colony, Coimbatore", 
     "Race Course, Coimbatore", "Ganapathy, Coimbatore", "Koundampalayam, Coimbatore", 
     "Periyanaickenpalayam, Coimbatore", "Sulur, Coimbatore", "Pollachi, Coimbatore", 
-    "Mettupalayam, Coimbatore", "Karamadai, Coimbatore", "Annur, Coimbatore"
+    "Mettupalayam, Coimbatore", "Karamadai, Coimbatore", "Annur, Coimbatore",
+    "Zone Alpha (Flood Risk)", "Zone Beta (Toxic Spill)", "Zone Gamma (Outbreak)"
 ]
 
 class MedicalService:

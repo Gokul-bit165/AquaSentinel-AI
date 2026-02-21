@@ -27,6 +27,9 @@ const WARD_COORDS = {
     "Mettupalayam, Coimbatore": [11.2968, 76.9358],
     "Karamadai, Coimbatore": [11.0968, 76.8758],
     "Annur, Coimbatore": [11.2368, 77.1058],
+    "Zone Alpha (Flood Risk)": [11.0568, 77.0158],
+    "Zone Beta (Toxic Spill)": [10.9868, 76.9658],
+    "Zone Gamma (Outbreak)": [11.0268, 76.9358],
 };
 
 const riskConfig = {

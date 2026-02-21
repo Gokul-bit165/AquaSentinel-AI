@@ -14,25 +14,25 @@ const api = axios.create({
  * Submit environmental data for risk prediction.
  * @param {{ rainfall: number, ph_level: number, contamination: number, cases_count: number, location?: string }} data
  */
-export const submitPrediction = (data) => api.post('/predict', data);
+export const submitPrediction = (data) => api.post('/api/v1/predict', data);
 
 /** Submit multiple predictions at once. */
-export const submitBatchPredictions = (data) => api.post('/predict/batch', data);
+export const submitBatchPredictions = (data) => api.post('/api/v1/predict/batch', data);
 
 /** Fetch all past predictions. */
-export const getPredictions = () => api.get('/predictions');
+export const getPredictions = () => api.get('/api/v1/predictions');
 
 /** Fetch all active alerts. */
-export const getAlerts = () => api.get('/alerts');
+export const getAlerts = () => api.get('/api/v1/alerts');
 
 /** Resolve an alert. */
-export const resolveAlert = (id) => api.patch(`/alerts/${id}/resolve`);
+export const resolveAlert = (id) => api.patch(`/api/v1/alerts/${id}/resolve`);
 
 /** Fetch summary stats for the dashboard. */
-export const getStats = () => api.get('/stats');
+export const getStats = () => api.get('/api/v1/stats');
 
 /** Fetch ML model metrics. */
-export const getModelMetrics = () => api.get('/model/metrics');
+export const getModelMetrics = () => api.get('/api/v1/model/metrics');
 
 // Agentic AI & Simulation (Ollama + SHAP)
 export const getAgentAnalysis = (data) => api.post('/api/v1/agent/analyze', data);

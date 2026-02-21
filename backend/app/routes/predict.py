@@ -159,6 +159,7 @@ def model_plot(plot_name: str):
         "confusion_matrix_rf.png", "confusion_matrix_gb.png",
         "feature_importance_comparison.png", "model_accuracy_comparison.png",
         "risk_distribution.png", "feature_correlation.png", "roc_curves.png",
+        "pr_curves.png", "learning_curves.png",
     ]
     if plot_name not in allowed_plots:
         raise HTTPException(status_code=404, detail=f"Plot '{plot_name}' not found")

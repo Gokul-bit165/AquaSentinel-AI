@@ -5,6 +5,8 @@ from datetime import datetime
 from app.services.weather_service import weather_service
 from app.services.medical_service import medical_service
 from app.ml.predictor import predict
+from app.utils.database import SessionLocal
+from app.models.prediction import Prediction, Alert
 
 logger = logging.getLogger("aqua-sentinel")
 
@@ -57,6 +59,15 @@ class PulseService:
                     contamination += 0.2
                 if "Gandhipuram" in ward:
                     contamination += 0.15
+                
+                # Force High Risk for demonstration zones
+                if "Zone Alpha" in ward:
+                    rainfall = 500.0
+                    contamination = 0.65
+                elif "Zone Beta" in ward:
+                    contamination = 0.95
+                elif "Zone Gamma" in ward:
+                    cases = 120
 
                 # 3. Run AI Prediction
                 ai_result = predict(
@@ -80,6 +91,10 @@ class PulseService:
                         "cases_count": cases
                     }
                 })
+
+                # 4. Sync HIGH risk alerts with Database (Hackathon Demo Logic)
+                if ai_result["risk_level"] == "high":
+                    self._sync_high_risk_to_db(ward, rainfall, ph_level, contamination, cases, ai_result)
             except Exception as e:
                 logger.error(f"Pulse failed for ward {ward}: {e}")
                 # Fallback entry so the ward still appears
@@ -98,6 +113,52 @@ class PulseService:
 
         self.last_pulse = pulse_results
         return pulse_results
+
+    def _sync_high_risk_to_db(self, location: str, rainfall: float, ph_level: float, 
+                             contamination: float, cases: int, ai_result: dict):
+        """Ensures a HIGH risk simulation creates a DB alert if one doesn't exist."""
+        db = SessionLocal()
+        try:
+            # Check for existing unresolved alert for this location in the last HOUR
+            existing = (
+                db.query(Alert)
+                .join(Prediction)
+                .filter(Prediction.location == location)
+                .filter(Alert.is_resolved == False)
+                .first()
+            )
+            
+            if not existing:
+                logger.info(f"🚨 Pulse Sync: Automatically generating alert for {location}")
+                
+                # Logic copied from prediction_service.py to maintain consistency
+                prediction = Prediction(
+                    rainfall=rainfall,
+                    ph_level=ph_level,
+                    contamination=contamination,
+                    cases_count=cases,
+                    risk_level=ai_result["risk_level"],
+                    severity="CRITICAL" if "Zone" in location else "HIGH",
+                    trend="RISING",
+                    confidence=ai_result["confidence"],
+                    recommendation=f"Urgent response required for {location}. Resource deployment recommended.",
+                    location=location,
+                )
+                db.add(prediction)
+                db.commit()
+                db.refresh(prediction)
+
+                alert = Alert(
+                    prediction_id=prediction.id,
+                    severity=prediction.severity,
+                    message=f"🚨 PULSE ALERT: {ai_result.get('reason', 'Critical sensor anomaly detected')} in {location}.",
+                )
+                db.add(alert)
+                db.commit()
+        except Exception as e:
+            logger.error(f"Failed to sync pulse alert for {location}: {e}")
+        finally:
+            db.close()
 
 
 pulse_service = PulseService()

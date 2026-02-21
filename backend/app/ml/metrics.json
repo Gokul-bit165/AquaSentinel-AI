@@ -136,6 +136,8 @@
     "model_accuracy_comparison.png",
     "risk_distribution.png",
     "feature_correlation.png",
-    "roc_curves.png"
+    "roc_curves.png",
+    "pr_curves.png",
+    "learning_curves.png"
   ]
 }

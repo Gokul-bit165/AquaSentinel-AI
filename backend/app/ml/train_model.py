@@ -28,8 +28,10 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier,
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.metrics import (
     classification_report, confusion_matrix, accuracy_score,
-    f1_score, roc_curve, auc,
+    f1_score, roc_curve, auc, precision_recall_curve,
+    average_precision_score,
 )
+from sklearn.model_selection import train_test_split, cross_val_score, learning_curve
 from sklearn.preprocessing import LabelEncoder, label_binarize
 import joblib
 
@@ -285,6 +287,76 @@ def plot_roc_curves(models_dict, X_test, y_test, class_names, encoder, filename)
     print(f"   📊 Saved {filename}")
 
 
+def plot_precision_recall_curves(models_dict, X_test, y_test, class_names, filename):
+    """Multi-class Precision-Recall curves for all models."""
+    n_classes = len(class_names)
+    y_test_bin = label_binarize(y_test, classes=range(n_classes))
+
+    fig, axes = plt.subplots(1, len(models_dict), figsize=(14, 6))
+    line_colors = ["#ef4444", "#22c55e", "#3b82f6"]
+
+    for idx, (name, model) in enumerate(models_dict.items()):
+        ax = axes[idx] if len(models_dict) > 1 else axes
+
+        if hasattr(model, "predict_proba"):
+            y_score = model.predict_proba(X_test)
+        else:
+            continue
+
+        for i in range(n_classes):
+            precision, recall, _ = precision_recall_curve(y_test_bin[:, i], y_score[:, i])
+            avg_p = average_precision_score(y_test_bin[:, i], y_score[:, i])
+            ax.plot(recall, precision, color=line_colors[i], lw=2,
+                    label=f"{class_names[i]} (AvgP={avg_p:.3f})")
+
+        ax.set_xlabel("Recall", fontsize=11)
+        ax.set_ylabel("Precision", fontsize=11)
+        ax.set_title(f"P-R — {name}", fontsize=13, fontweight="bold")
+        ax.legend(loc="lower left", fontsize=9, framealpha=0.7)
+        ax.grid(alpha=0.2)
+        ax.set_xlim([-0.02, 1.02])
+        ax.set_ylim([-0.02, 1.05])
+
+    fig.suptitle("Precision-Recall Curves", fontsize=16, fontweight="bold", y=1.02)
+    plt.tight_layout()
+    plt.savefig(os.path.join(PLOTS_DIR, filename), bbox_inches="tight")
+    plt.close()
+    print(f"   📊 Saved {filename}")
+
+
+def plot_learning_curves(model, X, y, filename):
+    """Plot learning curves to show training vs validation performance."""
+    train_sizes, train_scores, test_scores = learning_curve(
+        model, X, y, cv=5, n_jobs=-1,
+        train_sizes=np.linspace(0.1, 1.0, 5),
+        scoring="accuracy"
+    )
+
+    train_mean = np.mean(train_scores, axis=1)
+    train_std = np.std(train_scores, axis=1)
+    test_mean = np.mean(test_scores, axis=1)
+    test_std = np.std(test_scores, axis=1)
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    ax.plot(train_sizes, train_mean, 'o-', color="#ef4444", label="Training Score")
+    ax.fill_between(train_sizes, train_mean - train_std, train_mean + train_std, alpha=0.1, color="#ef4444")
+    
+    ax.plot(train_sizes, test_mean, 'o-', color="#22c55e", label="Cross-Validation Score")
+    ax.fill_between(train_sizes, test_mean - test_std, test_mean + test_std, alpha=0.1, color="#22c55e")
+
+    ax.set_xlabel("Training Samples", fontsize=12)
+    ax.set_ylabel("Accuracy Score", fontsize=12)
+    ax.set_title("Learning Curves (Hybrid Ensemble)", fontsize=15, fontweight="bold", pad=15)
+    ax.legend(loc="best")
+    ax.grid(alpha=0.2)
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(PLOTS_DIR, filename), bbox_inches="tight")
+    plt.close()
+    print(f"   📊 Saved {filename}")
+
+
 # ================ MAIN TRAINING ================
 
 def train():
@@ -421,6 +493,13 @@ def train():
     # ---- Plot 5: ROC Curves ----
     plot_roc_curves(models, X_test, y_test, class_names, encoder, "roc_curves.png")
 
+    # ---- Plot 6: Precision-Recall Curves ----
+    plot_precision_recall_curves(models, X_test, y_test, class_names, "pr_curves.png")
+
+    # ---- Plot 7: Learning Curves ----
+    print("\n📈 Calculating learning curves (this may take a moment)...")
+    plot_learning_curves(hybrid_ensemble, X, y_encoded, "learning_curves.png")
+
     # ---- Save Best Model ----
     print(f"\n{'=' * 60}")
     print(f"🏆 BEST MODEL: {best_model_name} (Accuracy: {best_accuracy:.4f})")
@@ -452,6 +531,8 @@ def train():
             "risk_distribution.png",
             "feature_correlation.png",
             "roc_curves.png",
+            "pr_curves.png",
+            "learning_curves.png",
         ],
     }
 
